@@ -3,8 +3,8 @@ session_start();
 include 'conexion.php';
 
 $data = json_decode(file_get_contents('php://input'), true);
-$username = $data['username'];
-$password = $data['password'];
+$username = $data['root'];
+$password = $data[''];
 
 $query = "SELECT id, role FROM usuarios WHERE username = ? AND password = ?";
 $stmt = $conn->prepare($query);

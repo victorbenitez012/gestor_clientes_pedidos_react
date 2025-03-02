@@ -5,10 +5,10 @@ header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS'); // Méto
 header('Access-Control-Allow-Headers: Content-Type'); // Encabezados permitidos
 
 // Incluir archivo de conexión
-include '../../db/conexion.php';
+include '../conexion.php';
 $conexion = conectarBD();
 
-// Obtener parámetros de búsqueda
+// Obtener y sanitizar parámetros de búsqueda
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 $search_secondary = isset($_GET['search_secondary']) ? trim($_GET['search_secondary']) : '';
 $fecha_desde = isset($_GET['fecha_desde']) ? trim($_GET['fecha_desde']) : '';
@@ -29,40 +29,53 @@ $query = "
 
 // Agregar condiciones de búsqueda
 $whereConditions = [];
+$params = [];
+$types = '';
+
 if (!empty($search)) {
     $whereConditions[] = "(
-        pedidos.tipo_pedido LIKE '%$search%' 
-        OR clientes.nombre LIKE '%$search%'
-        OR clientes.direccion LIKE '%$search%'
-        OR clientes.barrio LIKE '%$search%'
-        OR clientes.telefono LIKE '%$search%'
-        OR pedidos.estado LIKE '%$search%'
-        OR clientes.observacion LIKE '%$search%'
-        OR pedidos.observacion_pedido LIKE '%$search%'
-        OR CONCAT(repartidores.nombre, ' ', repartidores.apellido) LIKE '%$search%'
+        pedidos.tipo_pedido LIKE ? 
+        OR clientes.nombre LIKE ?
+        OR clientes.direccion LIKE ?
+        OR clientes.barrio LIKE ?
+        OR clientes.telefono LIKE ?
+        OR pedidos.estado LIKE ?
+        OR clientes.observacion LIKE ?
+        OR pedidos.observacion_pedido LIKE ?
+        OR CONCAT(repartidores.nombre, ' ', repartidores.apellido) LIKE ?
     )";
+    $searchParam = "%$search%";
+    $params = array_merge($params, array_fill(0, 9, $searchParam));
+    $types .= str_repeat('s', 9); // 9 parámetros de tipo string
 }
 
 if (!empty($search_secondary)) {
     $whereConditions[] = "(
-        pedidos.tipo_pedido LIKE '%$search_secondary%' 
-        OR clientes.direccion LIKE '%$search_secondary%' 
-        OR clientes.barrio LIKE '%$search_secondary%'  
-        OR clientes.telefono LIKE '%$search_secondary%' 
-        OR clientes.nombre LIKE '%$search_secondary%' 
-        OR pedidos.estado LIKE '%$search_secondary%' 
-        OR clientes.observacion LIKE '%$search_secondary%' 
-        OR pedidos.observacion_pedido LIKE '%$search_secondary%' 
-        OR CONCAT(repartidores.nombre, ' ', repartidores.apellido) LIKE '%$search_secondary%'
+        pedidos.tipo_pedido LIKE ? 
+        OR clientes.direccion LIKE ? 
+        OR clientes.barrio LIKE ?  
+        OR clientes.telefono LIKE ? 
+        OR clientes.nombre LIKE ? 
+        OR pedidos.estado LIKE ? 
+        OR clientes.observacion LIKE ? 
+        OR pedidos.observacion_pedido LIKE ? 
+        OR CONCAT(repartidores.nombre, ' ', repartidores.apellido) LIKE ?
     )";
+    $searchSecondaryParam = "%$search_secondary%";
+    $params = array_merge($params, array_fill(0, 9, $searchSecondaryParam));
+    $types .= str_repeat('s', 9); // 9 parámetros de tipo string
 }
 
-if (!empty($fecha_desde) && !empty($fecha_hasta)) {
-    $whereConditions[] = "(pedidos.fecha_creacion BETWEEN '$fecha_desde' AND '$fecha_hasta')";
-} elseif (!empty($fecha_desde)) {
-    $whereConditions[] = "(pedidos.fecha_creacion >= '$fecha_desde')";
-} elseif (!empty($fecha_hasta)) {
-    $whereConditions[] = "(pedidos.fecha_creacion <= '$fecha_hasta')";
+if (!empty($fecha_desde)) {
+    $whereConditions[] = "pedidos.fecha_creacion >= ?";
+    $params[] = $fecha_desde;
+    $types .= 's'; // Parámetro de tipo string
+}
+
+if (!empty($fecha_hasta)) {
+    $whereConditions[] = "pedidos.fecha_creacion <= ?";
+    $params[] = $fecha_hasta;
+    $types .= 's'; // Parámetro de tipo string
 }
 
 if (!empty($whereConditions)) {
@@ -72,14 +85,23 @@ if (!empty($whereConditions)) {
 $query .= " ORDER BY pedidos.id DESC";
 
 // Ejecutar la consulta de pedidos
-$resultado = $conexion->query($query);
-if ($resultado && $resultado->num_rows > 0) {
+$stmt = $conexion->prepare($query);
+if ($stmt) {
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+    $stmt->execute();
+    $resultado = $stmt->get_result();
+
     $pedidos = [];
     while ($fila = $resultado->fetch_assoc()) {
         $pedidos[] = $fila;
     }
     echo json_encode($pedidos); // Devolver datos en JSON
 } else {
-    echo json_encode([]); // Devolver un array vacío si no hay resultados
+    echo json_encode(['error' => 'Error al preparar la consulta: ' . $conexion->error]);
 }
+
+// Cerrar la conexión
+$conexion->close();
 ?>
