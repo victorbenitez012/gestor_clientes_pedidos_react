@@ -1,0 +1,189 @@
+/* Estilos Globales - Configura el comportamiento básico de todos los elementos */
+* {
+    margin: 0; /* Remueve el margen externo de todos los elementos */
+    padding: 0; /* Remueve el relleno interno de todos los elementos */
+    box-sizing: border-box; /* Incluye bordes y relleno en el ancho y alto */
+}
+
+body {
+    font-family: Arial, sans-serif; /* Fuente base del sitio */
+    background: #f0e6f6; /* Fondo en color lila claro */
+    color: #333333; /* Color del texto negro */
+    min-height: 100vh; /* Ocupa toda la altura visible del navegador */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px; /* Espaciado general */
+}
+
+/* Encabezado principal - H1 */
+h1 {
+    font-size: 2rem; /* Tamaño de fuente reducido */
+    color: #4c4c4c; /* Gris oscuro para diferenciarlo del negro puro */
+    margin-bottom: 20px; /* Margen inferior reducido */
+    text-align: center; /* Centrado */
+}
+
+/* Formulario de búsqueda */
+form {
+    width: 100%; /* Ancho completo */
+    max-width: 1800px; /* Ancho máximo */
+    margin-bottom: 20px; /* Espaciado inferior */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px; /* Espaciado entre elementos */
+}
+
+form input, form select, form button {
+    padding: 10px; /* Relleno interno */
+    border: 1px solid #ccc; /* Borde ligero */
+    border-radius: 5px; /* Esquinas redondeadas */
+    font-size: 1rem; /* Tamaño de fuente */
+    flex: 1; /* Flexibilidad para ocupar espacio disponible */
+}
+
+form button {
+    background-color: #6a4c9c; /* Color de fondo lila oscuro */
+    color: white; /* Color del texto blanco */
+    cursor: pointer; /* Cursor tipo puntero */
+    transition: background 0.3s ease; /* Transición suave */
+}
+
+form button:hover {
+    background-color: #7a5fa5; /* Color de fondo lila claro al pasar el mouse */
+}
+
+/* Tabla */
+table {
+    width: 100%; /* Ancho completo */
+    max-width: 1800px; /* Ancho máximo */
+    border-collapse: collapse; /* Colapsa los bordes de la tabla */
+    margin-bottom: 20px; /* Espaciado inferior */
+}
+
+table th, table td {
+    padding: 2px; /* Relleno interno */
+    border: 2px solid #ccc; /* Borde ligero */
+    text-align: center; /* Alineación del texto centrado*/
+
+}
+
+table th {
+    background-color: #6a4c9c; /* Color de fondo lila oscuro para las cabeceras */
+    color: white; /* Color del texto blanco en las cabeceras */
+    border: 2px solid #ccc; /* Borde ligero */
+}
+
+table tr:nth-child(even) {
+    background-color: #f9f9f9; /* Fondo alternado para filas (gris claro) */
+}
+
+table tr:hover {
+    background-color: #f1f1f1; /* Fondo al pasar el mouse (gris aún más claro) */
+}
+
+/* Botones */
+button {
+    padding: 10px 20px; /* Relleno interno */
+    border: none; /* Sin borde */
+    border-radius: 5px; /* Esquinas redondeadas */
+    background-color: #6a4c9c; /* Color de fondo lila oscuro */
+    color: white; /* Color del texto blanco */
+    cursor: pointer; /* Cursor tipo puntero */
+    transition: background 0.3s ease; /* Transición suave */
+    margin-right: 10px; /* Espaciado derecho */
+}
+
+button:hover {
+    background-color: #7a5fa5; /* Color de fondo lila claro al pasar el mouse */
+}
+
+/* Mensajes de éxito y error */
+p[style*="color: green;"], p[style*="color: red;"] {
+    padding: 10px; /* Relleno interno */
+    border-radius: 5px; /* Esquinas redondeadas */
+    margin-bottom: 20px; /* Espaciado inferior */
+    text-align: center; /* Centrado  */
+}
+
+p[style*="color: green;"] {
+    background-color: #d4edda; /* Fondo verde claro para mensajes de éxito */
+    border: 1px solid #c3e6cb; /* Borde verde */
+}
+
+p[style*="color: red;"] {
+    background-color: #f8d7da; /* Fondo rojo claro para mensajes de error */
+    border: 1px solid #f5c6cb; /* Borde rojo */
+}
+
+/* Estilos para los campos editables dentro de la tabla */
+table input[type="text"],
+table input[type="number"],
+table select {
+    width: 100%; /* Ocupar todo el ancho disponible */
+    max-width: 100%; /* Asegurarse de que no se desborde */
+    padding: 8px; /* Relleno interno para mejor legibilidad */
+    border: 1px solid #ccc; /* Borde ligero */
+    border-radius: 5px; /* Esquinas redondeadas */
+    font-size: 1rem; /* Tamaño de fuente */
+    box-sizing: border-box; /* Incluir padding y borde en el ancho */
+    white-space: normal; /* Permitir que el texto se ajuste en varias líneas */
+    word-wrap: break-word; /* Romper palabras largas */
+    overflow: hidden; /* Evitar desbordamiento */
+    resize: none; /* Evitar que el usuario redimensione manualmente */
+}
+
+/* Estilos específicos para los selects */
+table select {
+    appearance: none; /* Eliminar el estilo por defecto del select */
+    background-color: white; /* Fondo blanco */
+    cursor: pointer; /* Cursor tipo puntero */
+}
+
+/* Estilos para los inputs de tipo número */
+table input[type="number"] {
+    text-align: center; /* Centrar el texto en los inputs de tipo número */
+}
+
+/* Ajustar el alto de las celdas que contienen campos editables */
+table td {
+    vertical-align: top; /* Alinear el contenido en la parte superior */
+    padding: 2px; /* Espaciado interno para las celdas */
+}
+
+/* Pie de la tabla */
+tfoot td {
+    font-weight: bold; /* Texto en negrita */
+    background-color: #f1f1f1; /* Fondo gris claro para el pie de la tabla */
+}
+
+/* Estilos para el menú de navegación */
+.menu {
+    list-style: none; /* Quita los estilos de lista */
+    padding: 0; /* Elimina el relleno */
+    margin: 20px 0; /* Espaciado superior e inferior */
+    display: flex; /* Usa flexbox para centrar */
+    justify-content: center; /* Centrado horizontal */
+}
+
+/* Estilos para los elementos de la lista */
+.menu li {
+    margin: 0; /* Sin márgenes */
+}
+
+/* Estilos para los enlaces dentro del menú */
+.menu a {
+    display: inline-block; /* Para que respete el padding y margen */
+    text-decoration: none; /* Sin subrayado */
+    background-color: #6a4c9c; /* Mismo color de los botones lila oscuro */
+    color: white; /* Color del texto blanco */
+    padding: 10px 20px; /* Espaciado interno */
+    border-radius: 10px; /* Bordes redondeados */
+    font-size: 1rem; /* Tamaño del texto */
+    transition: background 0.3s ease; /* Efecto suave al pasar el mouse */
+}
+
+/* Efecto hover al pasar el mouse */
+.menu a:hover {
+    background-color: #7a5fa5; /* Color ligeramente más claro al pasar el mouse */
+}

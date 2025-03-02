@@ -1,0 +1,192 @@
+/* Estilos Globales - Configura el comportamiento básico de todos los elementos */
+* {
+    margin: 0; /* Elimina los márgenes externos de todos los elementos */
+    padding: 0; /* Elimina el relleno interno de todos los elementos */
+    box-sizing: border-box; /* Asegura que los bordes y el relleno se incluyan en el cálculo del ancho y alto */
+}
+
+body {
+    font-family: Arial, sans-serif; /* Establece la fuente base para todo el sitio */
+    background: #f2e6ff; /* Fondo con tono lila claro */
+    display: flex; /* Utiliza el modelo de diseño flexbox */
+    flex-direction: column; /* Organiza los elementos en una columna (de arriba a abajo) */
+    align-items: center; /* Centra los elementos horizontalmente */
+    text-align: center; /* Centra el texto */
+    color: #333333; /* Color de texto gris oscuro */
+    min-height: 100vh; /* Asegura que el body ocupe toda la altura visible */
+    overflow-x: hidden; /* Evita el desbordamiento horizontal */
+}
+
+/* Encabezado principal - H1 */
+h1 {
+    font-size: 2.625rem; /* Tamaño de fuente más pequeño para el título principal */
+    color: #4b0082; /* Tono lila oscuro para el título */
+    margin-top: 30px; /* Añade un margen superior para separación */
+    margin-bottom: 40px; /* Añade un margen inferior */
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2); /* Sombra ligera para el texto */
+}
+
+/* Estilo para el texto de bienvenida - <p> */
+p {
+    font-size: 20px; /* Tamaño de fuente para el texto de bienvenida */
+    color: #6a4c9c; /* Color lila medio para el texto */
+    margin-bottom: 20px; /* Espaciado inferior */
+}
+
+/* Contenedor para el menú de navegación */
+nav {
+    width: 100%; /* El menú ocupa todo el ancho disponible */
+    display: flex; /* Flexbox para la disposición de los elementos */
+    flex-direction: column; /* Los elementos se disponen verticalmente */
+    align-items: center; /* Centra los elementos horizontalmente */
+    gap: 75px; /* Espaciado entre los elementos del menú */
+}
+
+/* Estilización del menú de botones */
+ul.menu {
+    list-style: none; /* Elimina los puntos de la lista */
+    padding: 0; /* Elimina el relleno de la lista */
+    width: 90%; /* El menú ocupa el 90% del ancho disponible */
+}
+
+ul.menu li {
+    display: block; /* Cada ítem ocupa el 100% de su ancho disponible */
+    width: 100%; /* Asegura que los ítems se alineen correctamente */
+    text-align: center; /* Centra el texto del ítem */
+}
+
+ul.menu li a {
+    background-color: #6a4c9c; /* Fondo lila medio para los botones */
+    color: #ffffff; /* Texto blanco para los botones */
+    text-decoration: none; /* Elimina el subrayado del enlace */
+    padding: 15px 30px; /* Relleno interno del botón */
+    border-radius: 5px; /* Bordes redondeados */
+    font-size: 1.275rem; /* Tamaño de la fuente del botón */
+    font-weight: bold; /* Texto en negrita */
+    box-shadow: 0 4.5px 9px rgba(0, 0, 0, 0.2); /* Sombra suave */
+    transition: 0.3s ease all; /* Transición suave para efectos */
+    display: inline-block; /* Hace que el enlace se vea como un botón */
+    width: 70%; /* El ancho del botón es un porcentaje del contenedor */
+    max-width: 400px; /* Tamaño máximo del botón */
+    margin-bottom: 22.5px; /* Espaciado inferior entre los botones */
+}
+
+ul.menu li a:hover {
+    background-color: #5b3c80; /* Fondo más oscuro de lila cuando el mouse pasa */
+    transform: scale(1.05); /* Aumenta ligeramente el tamaño al hacer hover */
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3); /* Sombra más intensa */
+}
+
+/* Botón de volver fijo en la esquina inferior */
+a.volver {
+    position: fixed; /* Fija el botón en la pantalla */
+    bottom: 15px; /* Espaciado desde la parte inferior de la pantalla */
+    right: 15px; /* Espaciado desde la derecha */
+    background-color: #ffffff; /* Fondo blanco para el botón */
+    color: #6a4c9c; /* Texto lila oscuro para el botón */
+    padding: 9px 13.5px; /* Relleno del botón */
+    border-radius: 12px; /* Bordes redondeados */
+    font-size: 0.9rem; /* Tamaño de la fuente */
+    font-weight: bold; /* Texto en negrita */
+    text-decoration: none; /* Elimina subrayado */
+    box-shadow: 0px 3px 7.5px rgba(0, 0, 0, 0.4); /* Sombra suave */
+    transition: transform 0.3s ease, background-color 0.3s ease; /* Animación al pasar el mouse */
+}
+
+a.volver:hover {
+    background-color: #e0b3ff; /* Fondo más claro al pasar el mouse */
+    transform: scale(1.1); /* Efecto de agrandar ligeramente el botón */
+}
+
+/* Sección inferior */
+section {
+    margin-top: 40px; /* Margen superior para separar la sección */
+    margin-bottom: 20px; /* Margen inferior */
+    text-align: center; /* Centra el texto de la sección */
+    background-color: #ffffff; /* Fondo blanco para la sección */
+    padding: 30px; /* Relleno interno */
+    border: 2px solid #6a4c9c; /* Borde lila alrededor de la sección */
+    border-radius: 8px; /* Bordes redondeados */
+    box-shadow: 0 3px 7.5px rgba(0, 0, 0, 0.1); /* Sombra suave */
+}
+
+/* Título de la sección */
+.section-title {
+    font-size: 20px; /* Tamaño de la fuente para el título */
+    font-weight: bold; /* Texto en negrita */
+    color: #333333; /* Gris oscuro para el título */
+    margin-bottom: 15px; /* Margen inferior */
+}
+
+/* Subtítulo descriptivo */
+.section-description {
+    font-size: 10px; /* Tamaño pequeño para el subtítulo */
+    line-height: 1.6; /* Espaciado entre líneas */
+    color: #474a57; /* Verde intermedio para el subtítulo */
+    margin-bottom: 22.5px; /* Margen inferior */
+}
+
+/* Listado de estadísticas */
+.stats {
+    list-style: none; /* Elimina los puntos de lista */
+    padding: 0; /* Elimina el relleno de la lista */
+    margin: 20px 0px; /* Márgenes superior e inferior */
+}
+
+.stats li {
+    font-size: 0.8rem; /* Tamaño pequeño para el texto de las estadísticas */
+    line-height: 1.2; /* Reduce el espacio entre líneas */
+    margin-bottom: 15px; /* Margen inferior */
+    color: #333333; /* Texto gris oscuro para las estadísticas */
+    font-weight: bold; /* Texto en negrita */
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1); /* Sombra ligera para mejorar el contraste */
+}
+
+
+/* Colores para las estadísticas específicas */
+.total-clientes {
+    color: #9b59b6; /* Lila brillante para el total de clientes */
+}
+
+.total-pedidos {
+    color: #9b59b6; /* Lila brillante para el total de pedidos */
+}
+
+.total-repartidores {
+    color: #1E3A5F; /* Azul oscuro para repartidores */
+}
+
+.pedidos-pendientes {
+    color: #FF8C00; /* Naranja amarrillenta para pedidos pendientes */
+}
+
+.pedidos-en-proceso {
+
+    color: #00bcd4; /* Celeste para pedidos en proceso */
+}
+
+.pedidos-entregados {
+    color: #228B22; /* Verde claro para pedidos entregados */
+}
+
+.pedidos-finalizados {
+
+    color: #006400; /* Verde oscuro para pedidos finalizados */
+}
+
+.pedidos-en-cuenta {
+    color: #FF4500; /* Rojo oscuro para pedidos en cuenta */
+}
+
+/* Estilo para formularios - Input y textarea */
+input, textarea {
+    width: 100%; /* Los campos de entrada ocupan el 100% del ancho */
+    padding: 7.5px; /* Relleno interno */
+    margin-bottom: 2.5px; /* Margen inferior */
+    border: 2px solid #6a4c9c; /* Borde lila claro */
+    border-radius: 10px; /* Bordes redondeados */
+    font-size: 1.2rem; /* Tamaño de la fuente */
+    background-color: rgba(255, 255, 255, 0.9); /* Fondo blanco con opacidad */
+    color: #333333; /* Texto en gris oscuro */
+}
+

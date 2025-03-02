@@ -1,0 +1,47 @@
+.container {
+    padding: 20px;
+    background: #f0e6f6;
+    min-height: 100vh;
+}
+
+.form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.table th, .table td {
+    padding: 10px;
+    border: 1px solid #ccc;
+    text-align: center;
+}
+
+.table th {
+    background-color: #6a4c9c;
+    color: white;
+}
+
+.botones {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+button {
+    padding: 10px 20px;
+    background-color: #6a4c9c;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #7a5fa5;
+}

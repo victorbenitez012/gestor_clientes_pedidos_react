@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "es5", // Compila a ES5 para mayor compatibilidad con navegadores
+    "lib": [
+      "dom", // Permite el uso de APIs del navegador (como document, localStorage, etc.)
+      "dom.iterable", // Permite el uso de iterables en el DOM
+      "esnext" // Incluye las últimas características de JavaScript
+    ],
+    "allowJs": true, // Permite la importación de archivos JavaScript
+    "skipLibCheck": true, // Omite la verificación de tipos en archivos de declaración (.d.ts)
+    "esModuleInterop": true, // Facilita la importación de módulos CommonJS
+    "allowSyntheticDefaultImports": true, // Permite importar módulos sin export default
+    "strict": true, // Habilita todas las opciones de verificación estricta de TypeScript
+    "forceConsistentCasingInFileNames": true, // Fuerza consistencia en mayúsculas/minúsculas en nombres de archivos
+    "noFallthroughCasesInSwitch": true, // Evita casos de switch sin break
+    "module": "esnext", // Usa módulos ES (import/export)
+    "moduleResolution": "node", // Resuelve módulos como lo hace Node.js
+    "resolveJsonModule": true, // Permite importar archivos JSON
+    "isolatedModules": true, // Asegura que cada archivo sea un módulo independiente
+    "noEmit": true, // No genera archivos de salida (útil para proyectos con Babel o Webpack)
+    "jsx": "react-jsx" // Soporte para JSX en React 17+
+  },
+  "include": [
+    "src" // Incluye todos los archivos en la carpeta src
+  ]
+}
