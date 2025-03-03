@@ -265,4 +265,5 @@ Crear más componentes React para operaciones CRUD.
 Mejorar la autenticación y los roles de usuario.
 
 Optimizar el diseño y la experiencia de usuario.
+
  
