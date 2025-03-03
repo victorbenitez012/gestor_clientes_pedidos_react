@@ -44,5 +44,6 @@
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@types/react-router-dom": "^5.3.3"
-  }
+  },
+  " homepage": "http://localhost/gestor_clientes_pedidos_react/"
 }
