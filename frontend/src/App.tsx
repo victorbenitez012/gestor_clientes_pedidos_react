@@ -10,7 +10,7 @@ import PrivateRoute from './components/private/PrivateRoute';
 
 const App = () => {
     return (
-        <Router>
+        <Router basename="/gestor_clientes_pedidos_react">
             <Routes>
                 {/* Ruta pública */}
                 <Route path="/login" element={<Login />} />
