@@ -260,6 +260,7 @@ Falta:
 
 Atomizar los archivos PHP restantes.
 
+
 Crear más componentes React para operaciones CRUD.
 
 Mejorar la autenticación y los roles de usuario.
