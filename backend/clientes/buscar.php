@@ -12,16 +12,21 @@ if (empty($termino)) {
     exit();
 }
 
+// Eliminar guiones del término de búsqueda
+$terminoSinGuiones = str_replace('-', '', $termino);
+
 $query = "SELECT id, nombre, direccion, barrio, telefono, observacion 
           FROM clientes 
           WHERE nombre LIKE ? 
           OR direccion LIKE ? 
           OR barrio LIKE ? 
-          OR telefono LIKE ?";
+          OR REPLACE(telefono, '-', '') LIKE ?";
 
 $param = "%$termino%";
+$paramSinGuiones = "%$terminoSinGuiones%";
+
 $stmt = $conexion->prepare($query);
-$stmt->bind_param("ssss", $param, $param, $param, $param);
+$stmt->bind_param("ssss", $param, $param, $param, $paramSinGuiones);
 $stmt->execute();
 $resultado = $stmt->get_result();
 

@@ -12,13 +12,19 @@ if (empty($direccion)) {
     exit();
 }
 
+// Eliminar guiones para búsqueda de teléfono
+$telefonoLimpio = str_replace('-', '', $direccion);
+
 $query = "SELECT id, nombre, direccion, barrio, telefono, observacion 
           FROM clientes 
-          WHERE direccion LIKE ?";
+          WHERE direccion LIKE ? 
+          OR REPLACE(telefono, '-', '') LIKE ?";
 
-$param = "%$direccion%";
+$paramDireccion = "%$direccion%";
+$paramTelefono = "%$telefonoLimpio%";
+
 $stmt = $conexion->prepare($query);
-$stmt->bind_param("s", $param);
+$stmt->bind_param("ss", $paramDireccion, $paramTelefono);
 $stmt->execute();
 $resultado = $stmt->get_result();
 

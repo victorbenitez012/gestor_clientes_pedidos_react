@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/gestor_clientes_pedidos_react/static/css/main.c32fed26.css",
-    "main.js": "/gestor_clientes_pedidos_react/static/js/main.21c1e756.js",
+    "main.css": "/gestor_clientes_pedidos_react/static/css/main.8785aede.css",
+    "main.js": "/gestor_clientes_pedidos_react/static/js/main.92b46b49.js",
     "static/js/453.8ab44547.chunk.js": "/gestor_clientes_pedidos_react/static/js/453.8ab44547.chunk.js",
     "index.html": "/gestor_clientes_pedidos_react/index.html",
-    "main.c32fed26.css.map": "/gestor_clientes_pedidos_react/static/css/main.c32fed26.css.map",
-    "main.21c1e756.js.map": "/gestor_clientes_pedidos_react/static/js/main.21c1e756.js.map",
+    "main.8785aede.css.map": "/gestor_clientes_pedidos_react/static/css/main.8785aede.css.map",
+    "main.92b46b49.js.map": "/gestor_clientes_pedidos_react/static/js/main.92b46b49.js.map",
     "453.8ab44547.chunk.js.map": "/gestor_clientes_pedidos_react/static/js/453.8ab44547.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.c32fed26.css",
-    "static/js/main.21c1e756.js"
+    "static/css/main.8785aede.css",
+    "static/js/main.92b46b49.js"
   ]
 }

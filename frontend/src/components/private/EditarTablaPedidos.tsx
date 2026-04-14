@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
+import Modal from '../common/Modal';
 
 interface Pedido {
     id: number;
@@ -27,6 +28,16 @@ interface Repartidor {
     apellido: string;
 }
 
+interface ModalState {
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'info' | 'success' | 'warning' | 'error';
+    onConfirm?: () => void;
+    onCancel?: () => void;
+    whatsappUrl?: string | null;
+}
+
 const EditarTablaPedidos: React.FC = () => {
     const [pedidos, setPedidos] = useState<Pedido[]>([]);
     const [pedidosOriginales, setPedidosOriginales] = useState<Pedido[]>([]);
@@ -45,6 +56,12 @@ const EditarTablaPedidos: React.FC = () => {
     const [mensajesWhatsapp, setMensajesWhatsapp] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [modal, setModal] = useState<ModalState>({
+        isOpen: false,
+        title: '',
+        message: '',
+        type: 'info'
+    });
 
     const registrosPorPagina = 50;
 
@@ -53,6 +70,10 @@ const EditarTablaPedidos: React.FC = () => {
     const totalGarrafas10kg = pedidos.reduce((sum, p) => sum + (p.garrafa_10kg || 0), 0);
     const totalGarrafas15kg = pedidos.reduce((sum, p) => sum + (p.garrafa_15kg || 0), 0);
     const totalGarrafas45kg = pedidos.reduce((sum, p) => sum + (p.garrafa_45kg || 0), 0);
+
+    const closeModal = () => {
+        setModal({ ...modal, isOpen: false });
+    };
 
     // Cargar repartidores
     useEffect(() => {
@@ -136,7 +157,7 @@ const EditarTablaPedidos: React.FC = () => {
             }
 
             setPedidos(pedidosData);
-            setPedidosOriginales(JSON.parse(JSON.stringify(pedidosData))); // Clonar originales
+            setPedidosOriginales(JSON.parse(JSON.stringify(pedidosData)));
             setTotalRegistros(totalReg);
             setTotalPaginas(totalPag);
 
@@ -175,8 +196,6 @@ const EditarTablaPedidos: React.FC = () => {
         setError('');
         setMensaje('');
 
-        console.log('Guardando pedidos modificados:', pedidosModificados);
-
         try {
             const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/pedidos/editar_tabla.php', {
                 method: 'POST',
@@ -193,7 +212,24 @@ const EditarTablaPedidos: React.FC = () => {
 
             if (data.mensaje) setMensaje(data.mensaje);
             if (data.error) setError(data.error);
-            if (data.mensajesWhatsapp) setMensajesWhatsapp(data.mensajesWhatsapp);
+
+            // Mostrar modal de WhatsApp si hay URL
+            if (data.mensajesWhatsapp && data.mensajesWhatsapp.length > 0) {
+                const urlWhatsapp = data.mensajesWhatsapp[0];
+                setModal({
+                    isOpen: true,
+                    title: 'Enviar WhatsApp',
+                    message: '¿Quieres enviar los detalles de los cambios al repartidor por WhatsApp?',
+                    type: 'info',
+                    onConfirm: () => {
+                        if (urlWhatsapp) window.open(urlWhatsapp, '_blank');
+                        closeModal();
+                    },
+                    onCancel: closeModal,
+                    whatsappUrl: urlWhatsapp
+                });
+                setMensajesWhatsapp(data.mensajesWhatsapp);
+            }
 
             // Recargar pedidos para actualizar originales
             await cargarPedidos();
@@ -429,6 +465,19 @@ const EditarTablaPedidos: React.FC = () => {
 
     return (
         <div className="editar-pedidos-container">
+            <Modal
+                isOpen={modal.isOpen}
+                onClose={closeModal}
+                onConfirm={modal.onConfirm}
+                onCancel={modal.onCancel}
+                title={modal.title}
+                message={modal.message}
+                type={modal.type}
+                confirmText="Enviar WhatsApp"
+                cancelText="No enviar"
+                showConfirm={!!modal.onConfirm}
+            />
+
             <h1>Editar Planilla de Pedidos</h1>
 
             {mensaje && <div className="mensaje-exito">{mensaje}</div>}
