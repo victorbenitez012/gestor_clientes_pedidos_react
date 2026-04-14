@@ -136,8 +136,8 @@ const AgregarPedido: React.FC = () => {
         }
     };
 
-    // Seleccionar cliente (desde búsqueda general)
-    const seleccionarClienteTotal = (cliente: Cliente) => {
+    // Seleccionar cliente
+    const seleccionarCliente = (cliente: Cliente, tipo: 'total' | 'direccion') => {
         setFormData({
             ...formData,
             nombre_cliente: cliente.nombre,
@@ -148,27 +148,16 @@ const AgregarPedido: React.FC = () => {
         });
         setClienteId(cliente.id);
         setSugerenciasTotal([]);
-        setMostrarSugerenciasTotal(false);
-        // Limpiar input de búsqueda
-        const inputTotal = document.getElementById('direccion_cliente_total') as HTMLInputElement;
-        if (inputTotal) inputTotal.value = '';
-        // Obtener últimos pedidos
-        obtenerUltimosPedidos(cliente.id);
-    };
-
-    // Seleccionar cliente (desde búsqueda por dirección)
-    const seleccionarClienteDireccion = (cliente: Cliente) => {
-        setFormData({
-            ...formData,
-            nombre_cliente: cliente.nombre,
-            direccion_cliente: cliente.direccion,
-            barrio_cliente: cliente.barrio,
-            telefono_cliente: cliente.telefono,
-            observacion_cliente: cliente.observacion || ''
-        });
-        setClienteId(cliente.id);
         setSugerenciasDireccion([]);
+        setMostrarSugerenciasTotal(false);
         setMostrarSugerenciasDireccion(false);
+
+        // Limpiar inputs de búsqueda
+        const inputTotal = document.getElementById('buscar_cliente_total') as HTMLInputElement;
+        const inputDireccion = document.getElementById('direccion_cliente') as HTMLInputElement;
+        if (inputTotal) inputTotal.value = '';
+        if (inputDireccion && tipo === 'direccion') inputDireccion.value = cliente.direccion;
+
         // Obtener últimos pedidos
         obtenerUltimosPedidos(cliente.id);
     };
@@ -184,15 +173,17 @@ const AgregarPedido: React.FC = () => {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
+    };
 
-        // Si es el campo de dirección, buscar sugerencias
-        if (name === 'direccion_cliente') {
-            buscarClientesDireccion(value);
-        }
+    // Manejar cambio en dirección con búsqueda
+    const handleDireccionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setFormData({ ...formData, direccion_cliente: value });
+        buscarClientesDireccion(value);
     };
 
     // Manejar cambio en búsqueda general
-    const handleBusquedaTotal = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleBusquedaTotalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         buscarClientesTotal(e.target.value);
     };
 
@@ -221,7 +212,7 @@ const AgregarPedido: React.FC = () => {
         setMensaje(null);
 
         // Limpiar inputs de búsqueda
-        const inputTotal = document.getElementById('direccion_cliente_total') as HTMLInputElement;
+        const inputTotal = document.getElementById('buscar_cliente_total') as HTMLInputElement;
         const inputDireccion = document.getElementById('direccion_cliente') as HTMLInputElement;
         if (inputTotal) inputTotal.value = '';
         if (inputDireccion) inputDireccion.value = '';
@@ -237,21 +228,19 @@ const AgregarPedido: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validar garrafas
         if (formData.garrafa_10kg === 0 && formData.garrafa_15kg === 0 && formData.garrafa_45kg === 0) {
             setMensaje({ texto: 'Debes agregar al menos una garrafa.', tipo: 'error' });
             return;
         }
 
-        // Validar campos obligatorios
         if (!formData.direccion_cliente || !formData.telefono_cliente || !formData.precio) {
             setMensaje({ texto: 'Por favor completa todos los campos obligatorios.', tipo: 'error' });
             return;
         }
 
         setLoading(true);
+        setMensaje(null);
 
-        // Crear FormData para enviar como POST
         const submitFormData = new FormData();
         submitFormData.append('direccion_cliente', formData.direccion_cliente);
         submitFormData.append('barrio_cliente', formData.barrio_cliente);
@@ -276,9 +265,8 @@ const AgregarPedido: React.FC = () => {
             const text = await response.text();
 
             if (text.includes('confirm')) {
-                setMensaje({ texto: 'Pedido registrado exitosamente', tipo: 'success' });
+                setMensaje({ texto: '¡Pedido registrado exitosamente!', tipo: 'success' });
 
-                // Extraer la URL de WhatsApp si existe
                 const match = text.match(/window\.location\.href = '([^']+)'/);
                 if (match && match[1]) {
                     const confirmar = window.confirm('¿Quieres enviar los detalles del pedido al repartidor por WhatsApp?');
@@ -287,7 +275,6 @@ const AgregarPedido: React.FC = () => {
                     }
                 }
 
-                // Limpiar campos del pedido
                 setFormData(prev => ({
                     ...prev,
                     observacion_pedido: '',
@@ -297,7 +284,6 @@ const AgregarPedido: React.FC = () => {
                     garrafa_45kg: 0
                 }));
 
-                // Recargar últimos pedidos si hay cliente seleccionado
                 if (clienteId) {
                     obtenerUltimosPedidos(clienteId);
                 }
@@ -311,204 +297,205 @@ const AgregarPedido: React.FC = () => {
             setMensaje({ texto: 'Error al guardar el pedido', tipo: 'error' });
         } finally {
             setLoading(false);
-            setTimeout(() => setMensaje(null), 3000);
+            setTimeout(() => setMensaje(null), 5000);
         }
     };
 
     return (
-        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
+        <div className="agregar-pedido-container">
             <h1>Agregar Pedido</h1>
 
             {mensaje && (
-                <div style={{
-                    padding: '10px',
-                    marginBottom: '15px',
-                    borderRadius: '4px',
-                    backgroundColor: mensaje.tipo === 'success' ? '#f0fff0' : '#fff0f0',
-                    color: mensaje.tipo === 'success' ? 'green' : 'red',
-                    border: `1px solid ${mensaje.tipo === 'success' ? '#c3e6cb' : '#f5c6cb'}`
-                }}>
+                <div className={mensaje.tipo === 'success' ? 'mensaje-exito' : 'mensaje-error'}>
                     {mensaje.texto}
                 </div>
             )}
 
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} className="formulario-pedido">
                 <input type="hidden" name="cliente_id" value={clienteId || ''} />
 
-                {/* Buscar Cliente */}
-                <fieldset style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '20px', marginBottom: '20px' }}>
-                    <legend>Buscar Cliente Existente</legend>
-                    <label>Buscar Cliente (nombre, dirección, barrio o teléfono):</label>
-                    <input
-                        type="text"
-                        id="direccion_cliente_total"
-                        autoComplete="off"
-                        onChange={handleBusquedaTotal}
-                        style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-                    />
-                    {mostrarSugerenciasTotal && sugerenciasTotal.length > 0 && (
-                        <div style={{
-                            border: '1px solid #ccc',
-                            maxHeight: '150px',
-                            overflowY: 'auto',
-                            backgroundColor: '#fff',
-                            position: 'absolute',
-                            width: '300px',
-                            zIndex: 1000,
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                        }}>
-                            {sugerenciasTotal.map(cliente => (
-                                <div
-                                    key={cliente.id}
-                                    onClick={() => seleccionarClienteTotal(cliente)}
-                                    style={{ padding: '10px', cursor: 'pointer', borderBottom: '1px solid #eee' }}
-                                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f0f0f0')}
-                                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#fff')}
-                                >
-                                    {cliente.nombre} - {cliente.direccion} ({cliente.telefono})
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                {/* Buscar Cliente Existente */}
+                <fieldset className="fieldset-buscar">
+                    <legend>🔍 Buscar Cliente Existente</legend>
+                    <div className="campo-busqueda">
+                        <label>Buscar Cliente (nombre, dirección, barrio o teléfono):</label>
+                        <input
+                            type="text"
+                            id="buscar_cliente_total"
+                            className="input-busqueda"
+                            placeholder="Escribe para buscar..."
+                            autoComplete="off"
+                            onChange={handleBusquedaTotalChange}
+                        />
+                        {mostrarSugerenciasTotal && sugerenciasTotal.length > 0 && (
+                            <div className="sugerencias">
+                                {sugerenciasTotal.map(cliente => (
+                                    <div key={cliente.id} className="sugerencia" onClick={() => seleccionarCliente(cliente, 'total')}>
+                                        <strong>{cliente.nombre}</strong><br />
+                                        <small>{cliente.direccion} - {cliente.barrio} | Tel: {cliente.telefono}</small>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </fieldset>
 
                 {/* Datos del Cliente */}
-                <fieldset style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '20px', marginBottom: '20px' }}>
-                    <legend>Datos del Cliente</legend>
+                <fieldset className="fieldset-cliente">
+                    <legend>👤 Datos del Cliente</legend>
 
-                    <label>Nombre del Cliente:</label>
-                    <input type="text" name="nombre_cliente" value={formData.nombre_cliente} onChange={handleChange} style={{ width: '100%', padding: '8px', marginBottom: '10px' }} />
-
-                    <label>Dirección del Cliente:</label>
-                    <input
-                        type="text"
-                        name="direccion_cliente"
-                        id="direccion_cliente"
-                        value={formData.direccion_cliente}
-                        onChange={handleChange}
-                        required
-                        style={{ width: '100%', padding: '8px', marginBottom: '10px' }}
-                    />
-                    {mostrarSugerenciasDireccion && sugerenciasDireccion.length > 0 && (
-                        <div style={{
-                            border: '1px solid #ccc',
-                            maxHeight: '150px',
-                            overflowY: 'auto',
-                            backgroundColor: '#fff',
-                            position: 'absolute',
-                            width: 'calc(100% - 40px)',
-                            zIndex: 1000,
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                        }}>
-                            {sugerenciasDireccion.map(cliente => (
-                                <div
-                                    key={cliente.id}
-                                    onClick={() => seleccionarClienteDireccion(cliente)}
-                                    style={{ padding: '10px', cursor: 'pointer', borderBottom: '1px solid #eee' }}
-                                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f0f0f0')}
-                                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#fff')}
-                                >
-                                    {cliente.direccion} {cliente.barrio} - {cliente.nombre} ({cliente.telefono})
-                                </div>
-                            ))}
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>Nombre del Cliente:</label>
+                            <input type="text" name="nombre_cliente" value={formData.nombre_cliente} onChange={handleChange} />
                         </div>
-                    )}
 
-                    <label>Barrio:</label>
-                    <input type="text" name="barrio_cliente" value={formData.barrio_cliente} onChange={handleChange} style={{ width: '100%', padding: '8px', marginBottom: '10px' }} />
+                        <div className="form-group">
+                            <label>Teléfono del Cliente:</label>
+                            <input type="text" name="telefono_cliente" value={formData.telefono_cliente} onChange={handleChange} required />
+                        </div>
+                    </div>
 
-                    <label>Teléfono del Cliente:</label>
-                    <input type="text" name="telefono_cliente" value={formData.telefono_cliente} onChange={handleChange} required style={{ width: '100%', padding: '8px', marginBottom: '10px' }} />
+                    <div className="form-row">
+                        <div className="form-group full-width">
+                            <label>Dirección del Cliente:</label>
+                            <input
+                                type="text"
+                                id="direccion_cliente"
+                                name="direccion_cliente"
+                                value={formData.direccion_cliente}
+                                onChange={handleDireccionChange}
+                                placeholder="Ej: Calle Principal 123"
+                                autoComplete="off"
+                                required
+                            />
+                            {mostrarSugerenciasDireccion && sugerenciasDireccion.length > 0 && (
+                                <div className="sugerencias sugerencias-direccion">
+                                    {sugerenciasDireccion.map(cliente => (
+                                        <div key={cliente.id} className="sugerencia" onClick={() => seleccionarCliente(cliente, 'direccion')}>
+                                            <strong>{cliente.direccion}</strong><br />
+                                            <small>{cliente.barrio} - {cliente.nombre} | Tel: {cliente.telefono}</small>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
 
-                    <label>Observaciones del Cliente:</label>
-                    <textarea name="observacion_cliente" value={formData.observacion_cliente} onChange={handleChange} rows={2} style={{ width: '100%', padding: '8px', marginBottom: '10px' }} />
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>Barrio:</label>
+                            <input type="text" name="barrio_cliente" value={formData.barrio_cliente} onChange={handleChange} placeholder="Ej: Centro" />
+                        </div>
+
+                        <div className="form-group">
+                            <label>Observaciones del Cliente:</label>
+                            <textarea name="observacion_cliente" value={formData.observacion_cliente} onChange={handleChange} rows={2} placeholder="Referencias, datos adicionales..."></textarea>
+                        </div>
+                    </div>
                 </fieldset>
 
                 {/* Datos del Pedido */}
-                <fieldset style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '20px', marginBottom: '20px' }}>
-                    <legend>Datos del Pedido</legend>
+                <fieldset className="fieldset-pedido">
+                    <legend>📦 Datos del Pedido</legend>
 
-                    <div style={{ display: 'flex', gap: '20px', marginBottom: '15px', flexWrap: 'wrap' }}>
-                        <div style={{ flex: 1, textAlign: 'center' }}>
-                            <label>10kg</label>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginTop: '5px' }}>
-                                <button type="button" onClick={() => cambiarCantidad('garrafa_10kg', -1)} style={{ width: '30px', height: '30px', backgroundColor: '#6a4c9c', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>−</button>
-                                <input type="number" name="garrafa_10kg" value={formData.garrafa_10kg} onChange={handleChange} min="0" style={{ width: '60px', textAlign: 'center', padding: '5px' }} />
-                                <button type="button" onClick={() => cambiarCantidad('garrafa_10kg', 1)} style={{ width: '30px', height: '30px', backgroundColor: '#6a4c9c', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>+</button>
+                    <div className="garrafas-container">
+                        <div className="garrafa-card">
+                            <div className="garrafa-icon">🫙</div>
+                            <div className="garrafa-label">10 kg</div>
+                            <div className="control-cantidad">
+                                <button type="button" onClick={() => cambiarCantidad('garrafa_10kg', -1)} className="btn-cantidad">−</button>
+                                <input type="number" name="garrafa_10kg" value={formData.garrafa_10kg} onChange={handleChange} min="0" />
+                                <button type="button" onClick={() => cambiarCantidad('garrafa_10kg', 1)} className="btn-cantidad">+</button>
                             </div>
                         </div>
-                        <div style={{ flex: 1, textAlign: 'center' }}>
-                            <label>15kg</label>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginTop: '5px' }}>
-                                <button type="button" onClick={() => cambiarCantidad('garrafa_15kg', -1)} style={{ width: '30px', height: '30px', backgroundColor: '#6a4c9c', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>−</button>
-                                <input type="number" name="garrafa_15kg" value={formData.garrafa_15kg} onChange={handleChange} min="0" style={{ width: '60px', textAlign: 'center', padding: '5px' }} />
-                                <button type="button" onClick={() => cambiarCantidad('garrafa_15kg', 1)} style={{ width: '30px', height: '30px', backgroundColor: '#6a4c9c', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>+</button>
+
+                        <div className="garrafa-card">
+                            <div className="garrafa-icon">🫙</div>
+                            <div className="garrafa-label">15 kg</div>
+                            <div className="control-cantidad">
+                                <button type="button" onClick={() => cambiarCantidad('garrafa_15kg', -1)} className="btn-cantidad">−</button>
+                                <input type="number" name="garrafa_15kg" value={formData.garrafa_15kg} onChange={handleChange} min="0" />
+                                <button type="button" onClick={() => cambiarCantidad('garrafa_15kg', 1)} className="btn-cantidad">+</button>
                             </div>
                         </div>
-                        <div style={{ flex: 1, textAlign: 'center' }}>
-                            <label>45kg</label>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginTop: '5px' }}>
-                                <button type="button" onClick={() => cambiarCantidad('garrafa_45kg', -1)} style={{ width: '30px', height: '30px', backgroundColor: '#6a4c9c', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>−</button>
-                                <input type="number" name="garrafa_45kg" value={formData.garrafa_45kg} onChange={handleChange} min="0" style={{ width: '60px', textAlign: 'center', padding: '5px' }} />
-                                <button type="button" onClick={() => cambiarCantidad('garrafa_45kg', 1)} style={{ width: '30px', height: '30px', backgroundColor: '#6a4c9c', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>+</button>
+
+                        <div className="garrafa-card">
+                            <div className="garrafa-icon">🫙</div>
+                            <div className="garrafa-label">45 kg</div>
+                            <div className="control-cantidad">
+                                <button type="button" onClick={() => cambiarCantidad('garrafa_45kg', -1)} className="btn-cantidad">−</button>
+                                <input type="number" name="garrafa_45kg" value={formData.garrafa_45kg} onChange={handleChange} min="0" />
+                                <button type="button" onClick={() => cambiarCantidad('garrafa_45kg', 1)} className="btn-cantidad">+</button>
                             </div>
                         </div>
                     </div>
 
-                    <label>Observaciones del Pedido:</label>
-                    <textarea name="observacion_pedido" value={formData.observacion_pedido} onChange={handleChange} rows={2} style={{ width: '100%', padding: '8px', marginBottom: '10px' }} />
+                    <div className="form-row">
+                        <div className="form-group full-width">
+                            <label>Observaciones del Pedido:</label>
+                            <textarea name="observacion_pedido" value={formData.observacion_pedido} onChange={handleChange} rows={2} placeholder="Instrucciones especiales, horario de entrega, etc."></textarea>
+                        </div>
+                    </div>
 
-                    <label>Estado:</label>
-                    <select name="estado" value={formData.estado} onChange={handleChange} required style={{ width: '100%', padding: '8px', marginBottom: '10px' }}>
-                        <option value="Pendiente">Pendiente</option>
-                        <option value="En Proceso">En Proceso</option>
-                        <option value="Entregado">Entregado</option>
-                        <option value="Cancelado">Cancelado</option>
-                        <option value="Finalizado">Finalizado</option>
-                        <option value="Cuenta">Cuenta</option>
-                    </select>
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>Estado:</label>
+                            <select name="estado" value={formData.estado} onChange={handleChange} required>
+                                <option value="Pendiente">⏳ Pendiente</option>
+                                <option value="En Proceso">🔄 En Proceso</option>
+                                <option value="Entregado">✅ Entregado</option>
+                                <option value="Cancelado">❌ Cancelado</option>
+                                <option value="Finalizado">🏁 Finalizado</option>
+                                <option value="Cuenta">💰 Cuenta</option>
+                            </select>
+                        </div>
 
-                    <label>Precio:</label>
-                    <input type="number" step="0.01" name="precio" value={formData.precio} onChange={handleChange} required style={{ width: '100%', padding: '8px', marginBottom: '10px' }} />
+                        <div className="form-group">
+                            <label>Precio:</label>
+                            <input type="number" step="0.01" name="precio" value={formData.precio} onChange={handleChange} placeholder="0.00" required />
+                        </div>
 
-                    <label>Repartidor:</label>
-                    <select name="repartidor" value={formData.repartidor} onChange={handleChange} style={{ width: '100%', padding: '8px', marginBottom: '10px' }}>
-                        <option value="">(Sin asignar)</option>
-                        {repartidores.map(r => (
-                            <option key={r.id} value={r.id}>{r.nombre} {r.apellido}</option>
-                        ))}
-                    </select>
+                        <div className="form-group">
+                            <label>Repartidor:</label>
+                            <select name="repartidor" value={formData.repartidor} onChange={handleChange}>
+                                <option value="">(Sin asignar)</option>
+                                {repartidores.map(r => (
+                                    <option key={r.id} value={r.id}>🚚 {r.nombre} {r.apellido}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
                 </fieldset>
 
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    <button type="submit" disabled={loading} style={{ padding: '10px 20px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                        {loading ? 'Guardando...' : 'Guardar Pedido'}
+                <div className="acciones-formulario">
+                    <button type="submit" disabled={loading} className="btn-guardar">
+                        {loading ? 'Guardando...' : '💾 Guardar Pedido'}
                     </button>
-                    <button type="button" onClick={limpiarFormulario} style={{ padding: '10px 20px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                        🧹 Limpiar
+                    <button type="button" onClick={limpiarFormulario} className="btn-limpiar">
+                        🧹 Limpiar Formulario
                     </button>
                 </div>
             </form>
 
             {/* Tabla de últimos pedidos */}
             {ultimosPedidos.length > 0 && (
-                <>
-                    <h2 style={{ marginTop: '30px' }}>Últimos 10 Pedidos del Cliente</h2>
-                    <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }} border={1}>
+                <div className="ultimos-pedidos">
+                    <h2>📋 Últimos 10 Pedidos del Cliente</h2>
+                    <div className="tabla-container">
+                        <table className="tabla-pedidos">
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Tipo Pedido</th>
+                                    <th>Garrafas</th>
                                     <th>Dirección</th>
                                     <th>Barrio</th>
                                     <th>Teléfono</th>
-                                    <th>Nombre Cliente</th>
-                                    <th>Observación Cliente</th>
+                                    <th>Cliente</th>
                                     <th>Estado</th>
                                     <th>Precio</th>
-                                    <th>Observación Pedido</th>
-                                    <th>Fecha Creación</th>
+                                    <th>Observación</th>
+                                    <th>Fecha</th>
                                     <th>Repartidor</th>
                                 </tr>
                             </thead>
@@ -521,10 +508,9 @@ const AgregarPedido: React.FC = () => {
                                         <td>{pedido.barrio || ''}</td>
                                         <td>{pedido.telefono || ''}</td>
                                         <td>{pedido.cliente_nombre || ''}</td>
-                                        <td>{pedido.observacion_cliente || ''}</td>
-                                        <td>{pedido.estado || ''}</td>
+                                        <td className="estado">{pedido.estado || ''}</td>
                                         <td>${formatearPrecio(pedido.precio)}</td>
-                                        <td>{pedido.observacion_pedido || ''}</td>
+                                        <td>{pedido.observacion_pedido || '-'}</td>
                                         <td>{pedido.fecha_creacion || ''}</td>
                                         <td>{pedido.repartidor_nombre ? `${pedido.repartidor_nombre} ${pedido.repartidor_apellido}` : 'Sin asignar'}</td>
                                     </tr>
@@ -532,11 +518,11 @@ const AgregarPedido: React.FC = () => {
                             </tbody>
                         </table>
                     </div>
-                </>
+                </div>
             )}
 
-            <ul style={{ listStyle: 'none', padding: 0, marginTop: '20px' }}>
-                <li><a href="/gestor_clientes_pedidos_react/pedidos/index.php" style={{ padding: '10px 20px', backgroundColor: '#6c757d', color: 'white', textDecoration: 'none', borderRadius: '4px' }}>Volver</a></li>
+            <ul className="menu">
+                <li><a href="/gestor_clientes_pedidos_react/pedidos/index.php" className="btn-volver">← Volver al listado de pedidos</a></li>
             </ul>
         </div>
     );
