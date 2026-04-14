@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 
 interface Pedido {
@@ -25,29 +25,18 @@ interface Repartidor {
     id: number;
     nombre: string;
     apellido: string;
-    telefono?: string;
-}
-
-interface Filtros {
-    search: string;
-    search_secondary: string;
-    fecha_desde: string;
-    fecha_hasta: string;
-    repartidor_filtro: string;
-    estado_filtro: string;
 }
 
 const EditarTablaPedidos: React.FC = () => {
     const [pedidos, setPedidos] = useState<Pedido[]>([]);
+    const [pedidosOriginales, setPedidosOriginales] = useState<Pedido[]>([]);
     const [repartidores, setRepartidores] = useState<Repartidor[]>([]);
-    const [filtros, setFiltros] = useState<Filtros>({
-        search: '',
-        search_secondary: '',
-        fecha_desde: '',
-        fecha_hasta: '',
-        repartidor_filtro: '',
-        estado_filtro: ''
-    });
+    const [search, setSearch] = useState('');
+    const [searchSecondary, setSearchSecondary] = useState('');
+    const [fechaDesde, setFechaDesde] = useState('');
+    const [fechaHasta, setFechaHasta] = useState('');
+    const [repartidorFiltro, setRepartidorFiltro] = useState('');
+    const [estadoFiltro, setEstadoFiltro] = useState('');
     const [paginaActual, setPaginaActual] = useState(1);
     const [totalPaginas, setTotalPaginas] = useState(1);
     const [totalRegistros, setTotalRegistros] = useState(0);
@@ -81,20 +70,40 @@ const EditarTablaPedidos: React.FC = () => {
         fetchRepartidores();
     }, []);
 
+    // Comparar si un pedido ha cambiado
+    const haCambiado = (original: Pedido, actual: Pedido): boolean => {
+        return original.tipo_pedido !== actual.tipo_pedido ||
+            original.garrafa_10kg !== actual.garrafa_10kg ||
+            original.garrafa_15kg !== actual.garrafa_15kg ||
+            original.garrafa_45kg !== actual.garrafa_45kg ||
+            original.estado !== actual.estado ||
+            Number(original.precio) !== Number(actual.precio) ||
+            original.observacion_pedido !== actual.observacion_pedido ||
+            original.repartidor_id !== actual.repartidor_id;
+    };
+
+    // Obtener solo los pedidos modificados
+    const obtenerPedidosModificados = (): Pedido[] => {
+        return pedidos.filter((pedido, index) => {
+            const original = pedidosOriginales[index];
+            return original && haCambiado(original, pedido);
+        });
+    };
+
     // Cargar pedidos
-    const cargarPedidos = useCallback(async () => {
+    const cargarPedidos = async () => {
         setLoading(true);
         setError('');
         try {
             const params = new URLSearchParams();
-
-            if (filtros.search) params.append('search', filtros.search);
-            if (filtros.search_secondary) params.append('search_secondary', filtros.search_secondary);
-            if (filtros.fecha_desde) params.append('fecha_desde', filtros.fecha_desde);
-            if (filtros.fecha_hasta) params.append('fecha_hasta', filtros.fecha_hasta);
-            if (filtros.repartidor_filtro) params.append('repartidor_filtro', filtros.repartidor_filtro);
-            if (filtros.estado_filtro) params.append('estado_filtro', filtros.estado_filtro);
+            if (search) params.append('search', search);
+            if (searchSecondary) params.append('search_secondary', searchSecondary);
+            if (fechaDesde) params.append('fecha_desde', fechaDesde);
+            if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+            if (repartidorFiltro) params.append('repartidor_filtro', repartidorFiltro);
+            if (estadoFiltro) params.append('estado_filtro', estadoFiltro);
             params.append('pagina', paginaActual.toString());
+            params.append('registros_por_pagina', registrosPorPagina.toString());
 
             const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/pedidos/editar_tabla.php?${params.toString()}`);
 
@@ -104,31 +113,44 @@ const EditarTablaPedidos: React.FC = () => {
 
             const data = await response.json();
 
+            let pedidosData: Pedido[] = [];
+            let totalReg = 0;
+            let totalPag = 1;
+
             if (Array.isArray(data)) {
-                setPedidos(data);
-                setTotalRegistros(data.length);
-                setTotalPaginas(1);
+                pedidosData = data;
+                totalReg = data.length;
+                totalPag = 1;
             } else if (data.pedidos && Array.isArray(data.pedidos)) {
-                setPedidos(data.pedidos);
-                setTotalRegistros(data.total_registros || data.pedidos.length);
-                setTotalPaginas(data.total_paginas || 1);
-            } else if (data.error) {
-                setError(data.error);
+                pedidosData = data.pedidos;
+                totalReg = data.total_registros || data.pedidos.length;
+                totalPag = data.total_paginas || 1;
             } else {
+                setError('Formato de datos inválido');
                 setPedidos([]);
-                setError('No se encontraron pedidos');
+                setPedidosOriginales([]);
+                setTotalRegistros(0);
+                setTotalPaginas(1);
+                setLoading(false);
+                return;
             }
+
+            setPedidos(pedidosData);
+            setPedidosOriginales(JSON.parse(JSON.stringify(pedidosData))); // Clonar originales
+            setTotalRegistros(totalReg);
+            setTotalPaginas(totalPag);
+
         } catch (err) {
             console.error('Error cargando pedidos:', err);
             setError('Error al cargar los pedidos');
         } finally {
             setLoading(false);
         }
-    }, [filtros, paginaActual]);
+    };
 
     useEffect(() => {
         cargarPedidos();
-    }, [cargarPedidos]);
+    }, [search, searchSecondary, fechaDesde, fechaHasta, repartidorFiltro, estadoFiltro, paginaActual]);
 
     // Manejar cambios en pedidos
     const handlePedidoChange = (index: number, field: keyof Pedido, value: any) => {
@@ -137,12 +159,23 @@ const EditarTablaPedidos: React.FC = () => {
         setPedidos(nuevosPedidos);
     };
 
-    // Guardar cambios
+    // Guardar cambios - SOLO los modificados
     const handleGuardarCambios = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        const pedidosModificados = obtenerPedidosModificados();
+
+        if (pedidosModificados.length === 0) {
+            setMensaje('No hay cambios para guardar');
+            setTimeout(() => setMensaje(''), 3000);
+            return;
+        }
+
         setSaving(true);
         setError('');
         setMensaje('');
+
+        console.log('Guardando pedidos modificados:', pedidosModificados);
 
         try {
             const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/pedidos/editar_tabla.php', {
@@ -151,7 +184,7 @@ const EditarTablaPedidos: React.FC = () => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    pedidos,
+                    pedidos: pedidosModificados,
                     update_all: true
                 })
             });
@@ -162,6 +195,7 @@ const EditarTablaPedidos: React.FC = () => {
             if (data.error) setError(data.error);
             if (data.mensajesWhatsapp) setMensajesWhatsapp(data.mensajesWhatsapp);
 
+            // Recargar pedidos para actualizar originales
             await cargarPedidos();
 
             setTimeout(() => {
@@ -178,18 +212,16 @@ const EditarTablaPedidos: React.FC = () => {
 
     // Limpiar filtros
     const limpiarFiltros = () => {
-        setFiltros({
-            search: '',
-            search_secondary: '',
-            fecha_desde: '',
-            fecha_hasta: '',
-            repartidor_filtro: '',
-            estado_filtro: ''
-        });
+        setSearch('');
+        setSearchSecondary('');
+        setFechaDesde('');
+        setFechaHasta('');
+        setRepartidorFiltro('');
+        setEstadoFiltro('');
         setPaginaActual(1);
     };
 
-    // Exportar a Excel con formato completo
+    // Exportar a Excel
     const exportarExcel = () => {
         const datosExcel: any[][] = [];
 
@@ -240,7 +272,7 @@ const EditarTablaPedidos: React.FC = () => {
         XLSX.writeFile(wb, `pedidos_${fechaStr}.xlsx`);
     };
 
-    // Imprimir tabla con formato completo
+    // Imprimir tabla
     const imprimirTabla = () => {
         const ventanaImpresion = window.open('', '_blank');
         if (!ventanaImpresion) return;
@@ -393,6 +425,8 @@ const EditarTablaPedidos: React.FC = () => {
         return paginas;
     };
 
+    const pedidosModificados = obtenerPedidosModificados();
+
     return (
         <div className="editar-pedidos-container">
             <h1>Editar Planilla de Pedidos</h1>
@@ -411,7 +445,7 @@ const EditarTablaPedidos: React.FC = () => {
                 </div>
             )}
 
-            {/* Filtros - Igual que el PHP original */}
+            {/* Filtros */}
             <div className="filters-container">
                 <div className="filter-row">
                     <div className="filter-group">
@@ -419,8 +453,8 @@ const EditarTablaPedidos: React.FC = () => {
                         <input
                             type="text"
                             placeholder="Buscar en todos los campos"
-                            value={filtros.search}
-                            onChange={(e) => setFiltros({ ...filtros, search: e.target.value })}
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
                         />
                     </div>
                     <div className="filter-group">
@@ -428,8 +462,8 @@ const EditarTablaPedidos: React.FC = () => {
                         <input
                             type="text"
                             placeholder="Búsqueda adicional"
-                            value={filtros.search_secondary}
-                            onChange={(e) => setFiltros({ ...filtros, search_secondary: e.target.value })}
+                            value={searchSecondary}
+                            onChange={(e) => setSearchSecondary(e.target.value)}
                         />
                     </div>
                 </div>
@@ -438,8 +472,8 @@ const EditarTablaPedidos: React.FC = () => {
                     <div className="filter-group">
                         <label>Filtrar por Repartidor</label>
                         <select
-                            value={filtros.repartidor_filtro}
-                            onChange={(e) => setFiltros({ ...filtros, repartidor_filtro: e.target.value })}
+                            value={repartidorFiltro}
+                            onChange={(e) => setRepartidorFiltro(e.target.value)}
                         >
                             <option value="">Todos los repartidores</option>
                             <option value="null">Sin asignar</option>
@@ -452,8 +486,8 @@ const EditarTablaPedidos: React.FC = () => {
                     <div className="filter-group">
                         <label>Filtrar por Estado</label>
                         <select
-                            value={filtros.estado_filtro}
-                            onChange={(e) => setFiltros({ ...filtros, estado_filtro: e.target.value })}
+                            value={estadoFiltro}
+                            onChange={(e) => setEstadoFiltro(e.target.value)}
                         >
                             <option value="">Todos los estados</option>
                             <option value="Pendiente">Pendiente</option>
@@ -469,8 +503,8 @@ const EditarTablaPedidos: React.FC = () => {
                         <label>Desde:</label>
                         <input
                             type="date"
-                            value={filtros.fecha_desde}
-                            onChange={(e) => setFiltros({ ...filtros, fecha_desde: e.target.value })}
+                            value={fechaDesde}
+                            onChange={(e) => setFechaDesde(e.target.value)}
                         />
                     </div>
 
@@ -478,8 +512,8 @@ const EditarTablaPedidos: React.FC = () => {
                         <label>Hasta:</label>
                         <input
                             type="date"
-                            value={filtros.fecha_hasta}
-                            onChange={(e) => setFiltros({ ...filtros, fecha_hasta: e.target.value })}
+                            value={fechaHasta}
+                            onChange={(e) => setFechaHasta(e.target.value)}
                         />
                     </div>
                 </div>
@@ -497,9 +531,14 @@ const EditarTablaPedidos: React.FC = () => {
             {/* Información de paginación */}
             <div className="pagination-info">
                 Mostrando {pedidos.length} de {totalRegistros} registros - Página {paginaActual} de {totalPaginas}
+                {pedidosModificados.length > 0 && (
+                    <span style={{ color: 'orange', marginLeft: '10px' }}>
+                        ({pedidosModificados.length} pedido(s) modificado(s) sin guardar)
+                    </span>
+                )}
             </div>
 
-            {/* Tabla editable - Con todas las columnas del original */}
+            {/* Tabla editable */}
             <form onSubmit={handleGuardarCambios}>
                 <table className="editable-table">
                     <thead>
@@ -528,7 +567,7 @@ const EditarTablaPedidos: React.FC = () => {
                             <tr><td colSpan={15} className="text-center">No se encontraron pedidos</td></tr>
                         ) : (
                             pedidos.map((pedido, index) => (
-                                <tr key={pedido.id}>
+                                <tr key={pedido.id} className={haCambiado(pedidosOriginales[index], pedido) ? 'modificado' : ''}>
                                     <td>{index + 1 + (paginaActual - 1) * registrosPorPagina}</td>
                                     <td>
                                         <input
@@ -626,8 +665,8 @@ const EditarTablaPedidos: React.FC = () => {
                 </table>
 
                 <div className="botones">
-                    <button type="submit" disabled={saving || loading}>
-                        {saving ? 'Guardando...' : 'Guardar Cambios'}
+                    <button type="submit" disabled={saving || loading || pedidosModificados.length === 0}>
+                        {saving ? 'Guardando...' : `Guardar Cambios (${pedidosModificados.length})`}
                     </button>
                     <button type="button" onClick={imprimirTabla}>Imprimir Tabla</button>
                     <button type="button" onClick={exportarExcel}>Exportar a Excel</button>

@@ -5,23 +5,20 @@ header('Access-Control-Allow-Origin: *');
 include '../conexion.php';
 $conexion = conectarBD();
 
-$termino = isset($_GET['termino']) ? trim($_GET['termino']) : '';
+$direccion = isset($_GET['direccion']) ? trim($_GET['direccion']) : '';
 
-if (empty($termino)) {
+if (empty($direccion)) {
     echo json_encode([]);
     exit();
 }
 
 $query = "SELECT id, nombre, direccion, barrio, telefono, observacion 
           FROM clientes 
-          WHERE nombre LIKE ? 
-          OR direccion LIKE ? 
-          OR barrio LIKE ? 
-          OR telefono LIKE ?";
+          WHERE direccion LIKE ?";
 
-$param = "%$termino%";
+$param = "%$direccion%";
 $stmt = $conexion->prepare($query);
-$stmt->bind_param("ssss", $param, $param, $param, $param);
+$stmt->bind_param("s", $param);
 $stmt->execute();
 $resultado = $stmt->get_result();
 

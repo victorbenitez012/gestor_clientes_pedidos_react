@@ -4,6 +4,7 @@ import Login from './components/public/Login';
 import Dashboard from './components/private/Dashboard';
 import Clientes from './components/private/Clientes';
 import Pedidos from './components/private/Pedidos';
+import AgregarPedido from './components/private/AgregarPedido';
 import EditarTablaPedidos from './components/private/EditarTablaPedidos';
 import Repartidores from './components/private/Repartidores';
 import PrivateRoute from './components/private/PrivateRoute';
@@ -63,11 +64,21 @@ const App = () => {
                         </PrivateRoute>
                     }
                 />
-
+                {/* Ruta protegida: agregar-pedido  (accesible para admin y user) */}
+                <Route
+                    path="/pedidos/agregar"
+                    element={
+                        <PrivateRoute roleRequired={['admin', 'usuario']}>
+                            <AgregarPedido />
+                        </PrivateRoute>
+                    }
+                />               
+            
                 {/* Ruta por defecto: Redirigir a /login si no coincide ninguna ruta */}
                 <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
         </Router>
+
     );
 };
 
