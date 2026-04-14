@@ -8,8 +8,7 @@ const Pedidos: React.FC = () => {
             <h1>Gestionar Pedidos</h1>
             <ul className="menu">
                 <li><Link to="/pedidos/buscar">Buscar Pedido</Link></li>
-                <li><Link to="/pedidos/agregar">Agregar Pedido</Link></li>
-                <li><Link to="/pedidos/editar">Editar Pedido</Link></li>
+                <li><Link to="/pedidos/agregar">Agregar Pedido</Link></li>                
                 <li><Link to="/pedidos/editar_tabla">Editar Planilla de Pedidos</Link></li>
                 <li><Link to="/">Volver</Link></li>
             </ul>

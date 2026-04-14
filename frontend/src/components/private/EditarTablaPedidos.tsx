@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import Modal from '../common/Modal';
 
@@ -56,6 +56,7 @@ const EditarTablaPedidos: React.FC = () => {
     const [mensajesWhatsapp, setMensajesWhatsapp] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [showWhatsappList, setShowWhatsappList] = useState(false);
     const [modal, setModal] = useState<ModalState>({
         isOpen: false,
         title: '',
@@ -64,6 +65,7 @@ const EditarTablaPedidos: React.FC = () => {
     });
 
     const registrosPorPagina = 50;
+    const TOTAL_RENGLONES_IMPRESION = 35;
 
     // Calcular totales
     const totalPrecio = pedidos.reduce((sum, p) => sum + (Number(p.precio) || 0), 0);
@@ -73,6 +75,42 @@ const EditarTablaPedidos: React.FC = () => {
 
     const closeModal = () => {
         setModal({ ...modal, isOpen: false });
+    };
+
+    // ============ FUNCIONES DE FORMATEO ============
+
+    // Capitalizar cada palabra (para dirección, nombre, barrio)
+    const capitalizarPalabras = (texto: string): string => {
+        if (!texto) return '';
+        return texto
+            .toLowerCase()
+            .split(' ')
+            .map(palabra => {
+                if (palabra.length > 0 && !/^\d+$/.test(palabra)) {
+                    return palabra.charAt(0).toUpperCase() + palabra.slice(1);
+                }
+                return palabra;
+            })
+            .join(' ');
+    };
+
+    // Capitalizar solo la primera letra de la primera palabra (para observaciones)
+    const capitalizarPrimeraLetra = (texto: string): string => {
+        if (!texto) return '';
+        return texto.charAt(0).toUpperCase() + texto.slice(1).toLowerCase();
+    };
+
+    // Formatear un pedido completo
+    const formatearPedido = (pedido: Pedido): Pedido => {
+        return {
+            ...pedido,
+            tipo_pedido: capitalizarPalabras(pedido.tipo_pedido),
+            observacion_pedido: capitalizarPrimeraLetra(pedido.observacion_pedido),
+            cliente_nombre: capitalizarPalabras(pedido.cliente_nombre),
+            direccion: capitalizarPalabras(pedido.direccion),
+            barrio: capitalizarPalabras(pedido.barrio),
+            cliente_observacion: capitalizarPrimeraLetra(pedido.cliente_observacion)
+        };
     };
 
     // Cargar repartidores
@@ -156,8 +194,11 @@ const EditarTablaPedidos: React.FC = () => {
                 return;
             }
 
-            setPedidos(pedidosData);
-            setPedidosOriginales(JSON.parse(JSON.stringify(pedidosData)));
+            // Formatear cada pedido al cargar
+            const pedidosFormateados = pedidosData.map(pedido => formatearPedido(pedido));
+
+            setPedidos(pedidosFormateados);
+            setPedidosOriginales(JSON.parse(JSON.stringify(pedidosFormateados)));
             setTotalRegistros(totalReg);
             setTotalPaginas(totalPag);
 
@@ -173,10 +214,25 @@ const EditarTablaPedidos: React.FC = () => {
         cargarPedidos();
     }, [search, searchSecondary, fechaDesde, fechaHasta, repartidorFiltro, estadoFiltro, paginaActual]);
 
-    // Manejar cambios en pedidos
-    const handlePedidoChange = (index: number, field: keyof Pedido, value: any) => {
+    // Manejar cambios en pedidos con formateo opcional
+    const handlePedidoChange = (index: number, field: keyof Pedido, value: any, aplicarFormateo: boolean = false) => {
+        let valorFinal = value;
+
+        if (aplicarFormateo) {
+            switch (field) {
+                case 'tipo_pedido':
+                    valorFinal = capitalizarPalabras(value);
+                    break;
+                case 'observacion_pedido':
+                    valorFinal = capitalizarPrimeraLetra(value);
+                    break;
+                default:
+                    break;
+            }
+        }
+
         const nuevosPedidos = [...pedidos];
-        nuevosPedidos[index] = { ...nuevosPedidos[index], [field]: value };
+        nuevosPedidos[index] = { ...nuevosPedidos[index], [field]: valorFinal };
         setPedidos(nuevosPedidos);
     };
 
@@ -187,7 +243,7 @@ const EditarTablaPedidos: React.FC = () => {
         const pedidosModificados = obtenerPedidosModificados();
 
         if (pedidosModificados.length === 0) {
-            setMensaje('No hay cambios para guardar');
+            setMensaje('✅ No hay cambios para guardar');
             setTimeout(() => setMensaje(''), 3000);
             return;
         }
@@ -210,25 +266,13 @@ const EditarTablaPedidos: React.FC = () => {
 
             const data = await response.json();
 
-            if (data.mensaje) setMensaje(data.mensaje);
-            if (data.error) setError(data.error);
+            if (data.mensaje) setMensaje(`✅ ${data.mensaje}`);
+            if (data.error) setError(`❌ ${data.error}`);
 
-            // Mostrar modal de WhatsApp si hay URL
+            // Verificar si hay mensajes de WhatsApp
             if (data.mensajesWhatsapp && data.mensajesWhatsapp.length > 0) {
-                const urlWhatsapp = data.mensajesWhatsapp[0];
-                setModal({
-                    isOpen: true,
-                    title: 'Enviar WhatsApp',
-                    message: '¿Quieres enviar los detalles de los cambios al repartidor por WhatsApp?',
-                    type: 'info',
-                    onConfirm: () => {
-                        if (urlWhatsapp) window.open(urlWhatsapp, '_blank');
-                        closeModal();
-                    },
-                    onCancel: closeModal,
-                    whatsappUrl: urlWhatsapp
-                });
                 setMensajesWhatsapp(data.mensajesWhatsapp);
+                setShowWhatsappList(true);
             }
 
             // Recargar pedidos para actualizar originales
@@ -236,11 +280,11 @@ const EditarTablaPedidos: React.FC = () => {
 
             setTimeout(() => {
                 setMensaje('');
-                setMensajesWhatsapp([]);
+                setError('');
             }, 5000);
         } catch (err) {
             console.error('Error guardando:', err);
-            setError('Error al guardar los cambios');
+            setError('❌ Error al guardar los cambios');
         } finally {
             setSaving(false);
         }
@@ -263,8 +307,8 @@ const EditarTablaPedidos: React.FC = () => {
 
         datosExcel.push([
             '#', 'Dirección', 'Barrio', 'Teléfono', 'Nombre Cliente',
-            'Observación Cliente', 'Observación', '10kg', '15kg', '45kg',
-            'Precio', 'E/T', 'Realizado'
+            'Observación Cliente', 'Observación Pedido', '10kg', '15kg', '45kg',
+            'Precio', 'Estado', 'Tipo Pedido', 'Repartidor'
         ]);
 
         pedidos.forEach((pedido, index) => {
@@ -280,18 +324,16 @@ const EditarTablaPedidos: React.FC = () => {
                 pedido.garrafa_15kg || 0,
                 pedido.garrafa_45kg || 0,
                 pedido.precio || 0,
-                '',
-                ''
+                pedido.estado,
+                pedido.tipo_pedido,
+                pedido.repartidor_nombre ? `${pedido.repartidor_nombre} ${pedido.repartidor_apellido}` : 'Sin asignar'
             ]);
         });
 
-        for (let i = pedidos.length; i < 35; i++) {
-            datosExcel.push([i + 1 + (paginaActual - 1) * registrosPorPagina, '', '', '', '', '', '', 0, 0, 0, 0, '', '']);
-        }
-
+        // Agregar fila de totales
         datosExcel.push([
             'TOTALES', '', '', '', '', '', '',
-            totalGarrafas10kg, totalGarrafas15kg, totalGarrafas45kg, totalPrecio, '', ''
+            totalGarrafas10kg, totalGarrafas15kg, totalGarrafas45kg, totalPrecio, '', '', ''
         ]);
 
         const wb = XLSX.utils.book_new();
@@ -299,16 +341,19 @@ const EditarTablaPedidos: React.FC = () => {
         ws['!cols'] = [
             { wch: 5 }, { wch: 30 }, { wch: 15 }, { wch: 15 },
             { wch: 20 }, { wch: 25 }, { wch: 25 }, { wch: 8 },
-            { wch: 8 }, { wch: 8 }, { wch: 12 }, { wch: 8 }, { wch: 8 }
+            { wch: 8 }, { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 15 }, { wch: 20 }
         ];
         XLSX.utils.book_append_sheet(wb, ws, 'Pedidos');
 
         const fecha = new Date();
         const fechaStr = `${fecha.getFullYear()}-${(fecha.getMonth() + 1).toString().padStart(2, '0')}-${fecha.getDate().toString().padStart(2, '0')}`;
         XLSX.writeFile(wb, `pedidos_${fechaStr}.xlsx`);
+
+        setMensaje('✅ Excel exportado correctamente');
+        setTimeout(() => setMensaje(''), 3000);
     };
 
-    // Imprimir tabla
+    // Imprimir tabla con 35 renglones (líneas completamente vacías)
     const imprimirTabla = () => {
         const ventanaImpresion = window.open('', '_blank');
         if (!ventanaImpresion) return;
@@ -348,7 +393,7 @@ const EditarTablaPedidos: React.FC = () => {
                             <th>Teléfono</th>
                             <th>Nombre Cliente</th>
                             <th>Observación Cliente</th>
-                            <th>Observación</th>
+                            <th>Observación Pedido</th>
                             <th>10kg</th>
                             <th>15kg</th>
                             <th>45kg</th>
@@ -360,6 +405,7 @@ const EditarTablaPedidos: React.FC = () => {
                     <tbody>
         `;
 
+        // Mostrar los pedidos existentes
         pedidos.forEach((pedido, idx) => {
             const num = idx + 1 + (paginaActual - 1) * registrosPorPagina;
             const kg10 = pedido.garrafa_10kg || 0;
@@ -381,26 +427,32 @@ const EditarTablaPedidos: React.FC = () => {
                     <td>${pedido.cliente_nombre || ''}</td>
                     <td>${pedido.cliente_observacion || ''}</td>
                     <td>${pedido.observacion_pedido || ''}</td>
-                    <td class="text-center">${kg10}</td>
-                    <td class="text-center">${kg15}</td>
-                    <td class="text-center">${kg45}</td>
-                    <td class="text-right">$${precioNum.toFixed(2)}</td>
+                    <td class="text-center">${kg10 > 0 ? kg10 : ''}</td>
+                    <td class="text-center">${kg15 > 0 ? kg15 : ''}</td>
+                    <td class="text-center">${kg45 > 0 ? kg45 : ''}</td>
+                    <td class="text-right">${precioNum > 0 ? '$' + precioNum.toFixed(2) : ''}</td>
                     <td class="text-center"></td>
                     <td class="text-center"></td>
                 </tr>
             `;
         });
 
-        for (let i = pedidos.length; i < 35; i++) {
-            const num = i + 1 + (paginaActual - 1) * registrosPorPagina;
+        // Completar hasta 35 renglones con filas COMPLETAMENTE VACÍAS
+        for (let i = pedidos.length + 1; i <= TOTAL_RENGLONES_IMPRESION; i++) {
+            const num = i + (paginaActual - 1) * registrosPorPagina;
             tablaHtml += `
                 <tr>
                     <td class="text-center">${num}</td>
-                    <td></td><td></td><td></td><td></td><td></td><td></td>
-                    <td class="text-center">0</td>
-                    <td class="text-center">0</td>
-                    <td class="text-center">0</td>
-                    <td class="text-right">$0.00</td>
+                    <td class="text-center"></td>
+                    <td class="text-center"></td>
+                    <td class="text-center"></td>
+                    <td class="text-center"></td>
+                    <td class="text-center"></td>
+                    <td class="text-center"></td>
+                    <td class="text-center"></td>
+                    <td class="text-center"></td>
+                    <td class="text-center"></td>
+                    <td class="text-right"></td>
                     <td class="text-center"></td>
                     <td class="text-center"></td>
                 </tr>
@@ -412,10 +464,10 @@ const EditarTablaPedidos: React.FC = () => {
                     <tfoot>
                         <tr class="totales">
                             <td colspan="7" class="text-right"><strong>TOTALES:</strong></td>
-                            <td class="text-center"><strong>${total10kg}</strong></td>
-                            <td class="text-center"><strong>${total15kg}</strong></td>
-                            <td class="text-center"><strong>${total45kg}</strong></td>
-                            <td class="text-right"><strong>$${totalPrecioImpresion.toFixed(2)}</strong></td>
+                            <td class="text-center"><strong>${total10kg > 0 ? total10kg : ''}</strong></td>
+                            <td class="text-center"><strong>${total15kg > 0 ? total15kg : ''}</strong></td>
+                            <td class="text-center"><strong>${total45kg > 0 ? total45kg : ''}</strong></td>
+                            <td class="text-right"><strong>${totalPrecioImpresion > 0 ? '$' + totalPrecioImpresion.toFixed(2) : ''}</strong></td>
                             <td class="text-center"></td>
                             <td class="text-center"></td>
                         </tr>
@@ -474,31 +526,47 @@ const EditarTablaPedidos: React.FC = () => {
                 message={modal.message}
                 type={modal.type}
                 confirmText="Enviar WhatsApp"
-                cancelText="No enviar"
+                cancelText="Cancelar"
                 showConfirm={!!modal.onConfirm}
             />
 
-            <h1>Editar Planilla de Pedidos</h1>
+            {/* Modal de lista de WhatsApp */}
+            {showWhatsappList && mensajesWhatsapp.length > 0 && (
+                <div className="whatsapp-modal-overlay">
+                    <div className="whatsapp-modal-content">
+                        <h3>📱 Mensajes de WhatsApp generados</h3>
+                        <p>Se generaron {mensajesWhatsapp.length} mensaje(s) para enviar:</p>
+                        <div className="whatsapp-list">
+                            {mensajesWhatsapp.map((url, idx) => (
+                                <button
+                                    key={idx}
+                                    className="whatsapp-btn"
+                                    onClick={() => window.open(url, '_blank')}
+                                >
+                                    📱 Enviar WhatsApp - Pedido {idx + 1}
+                                </button>
+                            ))}
+                        </div>
+                        <button
+                            className="close-whatsapp-btn"
+                            onClick={() => setShowWhatsappList(false)}
+                        >
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            <h1>📋 Editar Planilla de Pedidos</h1>
 
             {mensaje && <div className="mensaje-exito">{mensaje}</div>}
             {error && <div className="mensaje-error">{error}</div>}
-
-            {mensajesWhatsapp.length > 0 && (
-                <div className="whatsapp-container">
-                    <h3>Enlaces generados para enviar mensajes de WhatsApp:</h3>
-                    {mensajesWhatsapp.map((url, idx) => (
-                        <p key={idx}>
-                            <a href={url} target="_blank" rel="noopener noreferrer">{url}</a>
-                        </p>
-                    ))}
-                </div>
-            )}
 
             {/* Filtros */}
             <div className="filters-container">
                 <div className="filter-row">
                     <div className="filter-group">
-                        <label>Búsqueda General</label>
+                        <label>🔍 Búsqueda General</label>
                         <input
                             type="text"
                             placeholder="Buscar en todos los campos"
@@ -507,7 +575,7 @@ const EditarTablaPedidos: React.FC = () => {
                         />
                     </div>
                     <div className="filter-group">
-                        <label>Búsqueda Secundaria</label>
+                        <label>🔎 Búsqueda Secundaria</label>
                         <input
                             type="text"
                             placeholder="Búsqueda adicional"
@@ -519,7 +587,7 @@ const EditarTablaPedidos: React.FC = () => {
 
                 <div className="filter-row">
                     <div className="filter-group">
-                        <label>Filtrar por Repartidor</label>
+                        <label>👤 Filtrar por Repartidor</label>
                         <select
                             value={repartidorFiltro}
                             onChange={(e) => setRepartidorFiltro(e.target.value)}
@@ -533,7 +601,7 @@ const EditarTablaPedidos: React.FC = () => {
                     </div>
 
                     <div className="filter-group">
-                        <label>Filtrar por Estado</label>
+                        <label>📊 Filtrar por Estado</label>
                         <select
                             value={estadoFiltro}
                             onChange={(e) => setEstadoFiltro(e.target.value)}
@@ -549,7 +617,7 @@ const EditarTablaPedidos: React.FC = () => {
                     </div>
 
                     <div className="filter-group">
-                        <label>Desde:</label>
+                        <label>📅 Desde:</label>
                         <input
                             type="date"
                             value={fechaDesde}
@@ -558,7 +626,7 @@ const EditarTablaPedidos: React.FC = () => {
                     </div>
 
                     <div className="filter-group">
-                        <label>Hasta:</label>
+                        <label>📅 Hasta:</label>
                         <input
                             type="date"
                             value={fechaHasta}
@@ -570,19 +638,19 @@ const EditarTablaPedidos: React.FC = () => {
                 <div className="filter-row">
                     <div className="search-button">
                         <button onClick={cargarPedidos} disabled={loading}>
-                            {loading ? 'Cargando...' : 'Filtrar'}
+                            {loading ? '🔄 Cargando...' : '🔍 Filtrar'}
                         </button>
-                        <button onClick={limpiarFiltros}>Limpiar Filtros</button>
+                        <button onClick={limpiarFiltros}>🧹 Limpiar Filtros</button>
                     </div>
                 </div>
             </div>
 
             {/* Información de paginación */}
             <div className="pagination-info">
-                Mostrando {pedidos.length} de {totalRegistros} registros - Página {paginaActual} de {totalPaginas}
+                📄 Mostrando {pedidos.length} de {totalRegistros} registros - Página {paginaActual} de {totalPaginas}
                 {pedidosModificados.length > 0 && (
-                    <span style={{ color: 'orange', marginLeft: '10px' }}>
-                        ({pedidosModificados.length} pedido(s) modificado(s) sin guardar)
+                    <span style={{ color: '#ff9800', marginLeft: '10px', fontWeight: 'bold' }}>
+                        ⚠️ ({pedidosModificados.length} pedido(s) modificado(s) sin guardar)
                     </span>
                 )}
             </div>
@@ -604,16 +672,16 @@ const EditarTablaPedidos: React.FC = () => {
                             <th>Observación Cliente</th>
                             <th>Estado</th>
                             <th>Precio</th>
-                            <th>Observación</th>
-                            <th>Fecha de Creación</th>
+                            <th>Observación Pedido</th>
+                            <th>Fecha Creación</th>
                             <th>Repartidor</th>
                         </tr>
                     </thead>
                     <tbody>
                         {loading ? (
-                            <tr><td colSpan={15} className="text-center">Cargando pedidos...</td></tr>
+                            <tr><td colSpan={15} className="text-center">🔄 Cargando pedidos...</td></tr>
                         ) : pedidos.length === 0 ? (
-                            <tr><td colSpan={15} className="text-center">No se encontraron pedidos</td></tr>
+                            <tr><td colSpan={15} className="text-center">📭 No se encontraron pedidos</td></tr>
                         ) : (
                             pedidos.map((pedido, index) => (
                                 <tr key={pedido.id} className={haCambiado(pedidosOriginales[index], pedido) ? 'modificado' : ''}>
@@ -622,14 +690,15 @@ const EditarTablaPedidos: React.FC = () => {
                                         <input
                                             type="text"
                                             value={pedido.tipo_pedido}
-                                            onChange={(e) => handlePedidoChange(index, 'tipo_pedido', e.target.value)}
+                                            onChange={(e) => handlePedidoChange(index, 'tipo_pedido', e.target.value, false)}
+                                            onBlur={(e) => handlePedidoChange(index, 'tipo_pedido', e.target.value, true)}
                                         />
                                     </td>
                                     <td>
                                         <input
                                             type="number"
                                             value={pedido.garrafa_10kg || 0}
-                                            onChange={(e) => handlePedidoChange(index, 'garrafa_10kg', parseInt(e.target.value) || 0)}
+                                            onChange={(e) => handlePedidoChange(index, 'garrafa_10kg', parseInt(e.target.value) || 0, false)}
                                             min="0"
                                         />
                                     </td>
@@ -637,7 +706,7 @@ const EditarTablaPedidos: React.FC = () => {
                                         <input
                                             type="number"
                                             value={pedido.garrafa_15kg || 0}
-                                            onChange={(e) => handlePedidoChange(index, 'garrafa_15kg', parseInt(e.target.value) || 0)}
+                                            onChange={(e) => handlePedidoChange(index, 'garrafa_15kg', parseInt(e.target.value) || 0, false)}
                                             min="0"
                                         />
                                     </td>
@@ -645,7 +714,7 @@ const EditarTablaPedidos: React.FC = () => {
                                         <input
                                             type="number"
                                             value={pedido.garrafa_45kg || 0}
-                                            onChange={(e) => handlePedidoChange(index, 'garrafa_45kg', parseInt(e.target.value) || 0)}
+                                            onChange={(e) => handlePedidoChange(index, 'garrafa_45kg', parseInt(e.target.value) || 0, false)}
                                             min="0"
                                         />
                                     </td>
@@ -657,7 +726,7 @@ const EditarTablaPedidos: React.FC = () => {
                                     <td>
                                         <select
                                             value={pedido.estado}
-                                            onChange={(e) => handlePedidoChange(index, 'estado', e.target.value)}
+                                            onChange={(e) => handlePedidoChange(index, 'estado', e.target.value, false)}
                                         >
                                             <option value="Pendiente">Pendiente</option>
                                             <option value="En Proceso">En Proceso</option>
@@ -672,21 +741,22 @@ const EditarTablaPedidos: React.FC = () => {
                                             type="number"
                                             step="0.01"
                                             value={pedido.precio}
-                                            onChange={(e) => handlePedidoChange(index, 'precio', parseFloat(e.target.value) || 0)}
+                                            onChange={(e) => handlePedidoChange(index, 'precio', parseFloat(e.target.value) || 0, false)}
                                         />
                                     </td>
                                     <td>
                                         <input
                                             type="text"
                                             value={pedido.observacion_pedido}
-                                            onChange={(e) => handlePedidoChange(index, 'observacion_pedido', e.target.value)}
+                                            onChange={(e) => handlePedidoChange(index, 'observacion_pedido', e.target.value, false)}
+                                            onBlur={(e) => handlePedidoChange(index, 'observacion_pedido', e.target.value, true)}
                                         />
                                     </td>
                                     <td>{pedido.fecha_creacion}</td>
                                     <td>
                                         <select
                                             value={pedido.repartidor_id || ''}
-                                            onChange={(e) => handlePedidoChange(index, 'repartidor_id', e.target.value ? parseInt(e.target.value) : null)}
+                                            onChange={(e) => handlePedidoChange(index, 'repartidor_id', e.target.value ? parseInt(e.target.value) : null, false)}
                                         >
                                             <option value="">Sin asignar</option>
                                             {repartidores.map(r => (
@@ -700,11 +770,11 @@ const EditarTablaPedidos: React.FC = () => {
                     </tbody>
                     <tfoot>
                         <tr>
-                            <td colSpan={10} className="text-right"><strong>Total Precio:</strong></td>
+                            <td colSpan={10} className="text-right"><strong>💰 Total Precio:</strong></td>
                             <td colSpan={5}><strong>${totalPrecio.toFixed(2)}</strong></td>
                         </tr>
                         <tr style={{ backgroundColor: '#e8f4f8' }}>
-                            <td colSpan={2} className="text-right"><strong>Totales Garrafas:</strong></td>
+                            <td colSpan={2} className="text-right"><strong>📦 Totales Garrafas:</strong></td>
                             <td><strong>{totalGarrafas10kg}</strong> <small>(10kg)</small></td>
                             <td><strong>{totalGarrafas15kg}</strong> <small>(15kg)</small></td>
                             <td><strong>{totalGarrafas45kg}</strong> <small>(45kg)</small></td>
@@ -715,10 +785,10 @@ const EditarTablaPedidos: React.FC = () => {
 
                 <div className="botones">
                     <button type="submit" disabled={saving || loading || pedidosModificados.length === 0}>
-                        {saving ? 'Guardando...' : `Guardar Cambios (${pedidosModificados.length})`}
+                        {saving ? '💾 Guardando...' : `💾 Guardar Cambios (${pedidosModificados.length})`}
                     </button>
-                    <button type="button" onClick={imprimirTabla}>Imprimir Tabla</button>
-                    <button type="button" onClick={exportarExcel}>Exportar a Excel</button>
+                    <button type="button" onClick={imprimirTabla}>🖨️ Imprimir Tabla</button>
+                    <button type="button" onClick={exportarExcel}>📊 Exportar a Excel</button>
                 </div>
             </form>
 
@@ -726,23 +796,23 @@ const EditarTablaPedidos: React.FC = () => {
             {totalPaginas > 1 && (
                 <div className="pagination">
                     <button onClick={() => cambiarPagina(1)} disabled={paginaActual === 1}>
-                        Primera
+                        ⏮️ Primera
                     </button>
                     <button onClick={() => cambiarPagina(paginaActual - 1)} disabled={paginaActual === 1}>
-                        Anterior
+                        ◀️ Anterior
                     </button>
                     {renderPaginacion()}
                     <button onClick={() => cambiarPagina(paginaActual + 1)} disabled={paginaActual === totalPaginas}>
-                        Siguiente
+                        Siguiente ▶️
                     </button>
                     <button onClick={() => cambiarPagina(totalPaginas)} disabled={paginaActual === totalPaginas}>
-                        Última
+                        Última ⏭️
                     </button>
                 </div>
             )}
 
             <ul className="menu">
-                <li><a href="/gestor_clientes_pedidos_react/pedidos/index.php">Volver</a></li>
+                <li><a href="/gestor_clientes_pedidos_react/pedidos/index.php">🔙 Volver</a></li>
             </ul>
         </div>
     );

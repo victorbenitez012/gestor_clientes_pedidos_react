@@ -44,9 +44,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             clientes.barrio, 
             clientes.telefono, 
             clientes.nombre AS cliente_nombre, 
-            clientes.observacion AS cliente_observacion
+            clientes.observacion AS cliente_observacion,
+            repartidores.nombre AS repartidor_nombre,
+            repartidores.apellido AS repartidor_apellido,
+            repartidores.telefono AS repartidor_telefono
         FROM pedidos
         LEFT JOIN clientes ON pedidos.cliente_id = clientes.id
+        LEFT JOIN repartidores ON pedidos.repartidor_id = repartidores.id
     ";
 
     // Construir condiciones WHERE
@@ -134,7 +138,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             clientes.barrio, 
             clientes.telefono, 
             clientes.nombre AS cliente_nombre, 
-            clientes.observacion AS cliente_observacion",
+            clientes.observacion AS cliente_observacion,
+            repartidores.nombre AS repartidor_nombre,
+            repartidores.apellido AS repartidor_apellido,
+            repartidores.telefono AS repartidor_telefono",
         "SELECT COUNT(pedidos.id) as total",
         $query
     );
@@ -224,6 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pedidosData = $input['pedidos'];
     $actualizados = 0;
     $errores = [];
+    $mensajesWhatsapp = [];
     
     foreach ($pedidosData as $pedido) {
         if (!isset($pedido['id'])) {
@@ -239,6 +247,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $precio = isset($pedido['precio']) ? (float)$pedido['precio'] : 0;
         $observacion_pedido = isset($pedido['observacion_pedido']) ? $pedido['observacion_pedido'] : '';
         $repartidor_id = isset($pedido['repartidor_id']) && !empty($pedido['repartidor_id']) ? (int)$pedido['repartidor_id'] : null;
+        
+        // Verificar si el pedido tiene garrafas > 0
+        $tieneGarrafas = ($garrafa_10kg > 0 || $garrafa_15kg > 0 || $garrafa_45kg > 0);
+        
+        // Obtener información del cliente y repartidor antes de actualizar
+        $queryInfo = "
+            SELECT 
+                c.nombre as cliente_nombre,
+                c.direccion,
+                c.barrio,
+                c.telefono as cliente_telefono,
+                c.observacion as cliente_observacion,
+                r.nombre as repartidor_nombre,
+                r.apellido as repartidor_apellido,
+                r.telefono as repartidor_telefono
+            FROM pedidos p
+            LEFT JOIN clientes c ON p.cliente_id = c.id
+            LEFT JOIN repartidores r ON p.repartidor_id = r.id
+            WHERE p.id = ?
+        ";
+        
+        $stmtInfo = $conexion->prepare($queryInfo);
+        $infoPedido = null;
+        if ($stmtInfo) {
+            $stmtInfo->bind_param("i", $id);
+            $stmtInfo->execute();
+            $resultInfo = $stmtInfo->get_result();
+            $infoPedido = $resultInfo->fetch_assoc();
+            $stmtInfo->close();
+        }
         
         // Actualizar pedido
         $queryUpdate = "
@@ -271,6 +309,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if ($stmt->execute()) {
                 $actualizados++;
+                
+                // Generar mensaje WhatsApp SOLO si tiene garrafas > 0
+                if ($tieneGarrafas && $infoPedido && !empty($infoPedido['repartidor_telefono'])) {
+                    // Construir mensaje solo con garrafas > 0
+                    $detalleGarrafas = [];
+                    if ($garrafa_10kg > 0) $detalleGarrafas[] = "10kg: $garrafa_10kg";
+                    if ($garrafa_15kg > 0) $detalleGarrafas[] = "15kg: $garrafa_15kg";
+                    if ($garrafa_45kg > 0) $detalleGarrafas[] = "45kg: $garrafa_45kg";
+                    
+                    // Formato de WhatsApp con negritas usando *
+                    $mensajeWhatsApp = "*🛵 PEDIDO MODIFICADO* 🛵\n\n";
+                    $mensajeWhatsApp .= "*🆔 ID Pedido:* $id\n";
+                    $mensajeWhatsApp .= "*👤 Cliente:* " . ($infoPedido['cliente_nombre'] ?? 'N/A') . "\n";
+                    $mensajeWhatsApp .= "*📍 Dirección:* " . ($infoPedido['direccion'] ?? 'N/A') . "\n";
+                    $mensajeWhatsApp .= "*🏘️ Barrio:* " . ($infoPedido['barrio'] ?? 'N/A') . "\n";
+                    $mensajeWhatsApp .= "*📞 Teléfono:* " . ($infoPedido['cliente_telefono'] ?? 'N/A') . "\n";
+                    $mensajeWhatsApp .= "*📦 Garrafas:* " . implode(', ', $detalleGarrafas) . "\n";
+                    $mensajeWhatsApp .= "*💰 Precio:* $" . number_format($precio, 2) . "\n";
+                    $mensajeWhatsApp .= "*📝 Observación:* " . ($observacion_pedido ?: 'Ninguna') . "\n";
+                    $mensajeWhatsApp .= "*📋 Estado:* $estado\n";
+                    
+                    if ($infoPedido['cliente_observacion']) {
+                        $mensajeWhatsApp .= "*📌 Observación Cliente:* " . $infoPedido['cliente_observacion'] . "\n";
+                    }
+                    
+                    $mensajeWhatsApp .= "\n---\n📱 Enviado desde Sistema de Gestión";
+                    
+                    // Limpiar teléfono (solo números)
+                    $telefonoRepartidor = preg_replace('/[^0-9]/', '', $infoPedido['repartidor_telefono']);
+                    // Asegurar código de país Argentina (si no tiene, agregar 54)
+                    if (strlen($telefonoRepartidor) === 10) {
+                        $telefonoRepartidor = '54' . $telefonoRepartidor;
+                    }
+                    
+                    $urlWhatsApp = "https://wa.me/{$telefonoRepartidor}?text=" . urlencode($mensajeWhatsApp);
+                    $mensajesWhatsapp[] = $urlWhatsApp;
+                }
             } else {
                 $errores[] = "Error en pedido ID $id: " . $stmt->error;
             }
@@ -284,6 +359,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if ($actualizados > 0) {
         $respuesta['mensaje'] = "Se actualizaron $actualizados pedido(s) correctamente";
+        
+        if (!empty($mensajesWhatsapp)) {
+            $respuesta['mensajesWhatsapp'] = $mensajesWhatsapp;
+            $respuesta['whatsapp_generado'] = true;
+        } else {
+            $respuesta['whatsapp_generado'] = false;
+        }
     } else {
         $respuesta['mensaje'] = "No se realizaron cambios en los pedidos.";
     }

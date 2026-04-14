@@ -1,47 +1,364 @@
-.container {
+.editar-pedidos-container {
     padding: 20px;
-    background: #f0e6f6;
-    min-height: 100vh;
+    font-family: Arial, sans-serif;
+    max-width: 100%;
+    overflow-x: auto;
 }
 
-.form {
-    display: flex;
-    gap: 10px;
+h1 {
+    color: #4b0082;
     margin-bottom: 20px;
 }
 
-.table {
+/* Filtros */
+.filters-container {
+    background: #f5f5f5;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.filter-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.filter-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #333;
+}
+
+.filter-group input,
+.filter-group select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.search-button {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.search-button button {
+    padding: 8px 20px;
+    background-color: #4b0082;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.search-button button:hover {
+    background-color: #6a00a8;
+}
+
+/* Mensajes */
+.mensaje-exito {
+    background-color: #d4edda;
+    color: #155724;
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    border-left: 4px solid #28a745;
+}
+
+.mensaje-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    border-left: 4px solid #dc3545;
+}
+
+/* Información de paginación */
+.pagination-info {
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: #e8f4f8;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+/* Tabla editable */
+.editable-table {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 20px;
+    font-size: 13px;
 }
 
-.table th, .table td {
-    padding: 10px;
-    border: 1px solid #ccc;
-    text-align: center;
+.editable-table th,
+.editable-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+    vertical-align: top;
 }
 
-.table th {
-    background-color: #6a4c9c;
+.editable-table th {
+    background-color: #4b0082;
     color: white;
+    font-weight: bold;
+    position: sticky;
+    top: 0;
 }
 
+.editable-table input,
+.editable-table select {
+    width: 100%;
+    padding: 4px 6px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+.editable-table input:focus,
+.editable-table select:focus {
+    outline: none;
+    border-color: #4b0082;
+}
+
+.modificado {
+    background-color: #fff3cd;
+}
+
+/* Botones */
 .botones {
     display: flex;
     gap: 10px;
-    margin-top: 20px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
 }
 
-button {
+.botones button {
     padding: 10px 20px;
-    background-color: #6a4c9c;
+    background-color: #4b0082;
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 4px;
     cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
 }
 
-button:hover {
-    background-color: #7a5fa5;
+.botones button:hover:not(:disabled) {
+    background-color: #6a00a8;
+}
+
+.botones button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+/* Paginación */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+.pagination button {
+    padding: 6px 12px;
+    border: 1px solid #ddd;
+    background-color: white;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.3s;
+}
+
+.pagination button:hover:not(:disabled) {
+    background-color: #4b0082;
+    color: white;
+    border-color: #4b0082;
+}
+
+.pagination button.current {
+    background-color: #4b0082;
+    color: white;
+    border-color: #4b0082;
+}
+
+.pagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Menú */
+.menu {
+    margin-top: 30px;
+    padding: 0;
+    list-style: none;
+}
+
+.menu li {
+    display: inline;
+}
+
+.menu li a {
+    color: #4b0082;
+    text-decoration: none;
+    padding: 5px 10px;
+    border: 1px solid #4b0082;
+    border-radius: 4px;
+    transition: all 0.3s;
+}
+
+.menu li a:hover {
+    background-color: #4b0082;
+    color: white;
+}
+
+/* Utilidades */
+.text-center {
+    text-align: center;
+}
+
+.text-right {
+    text-align: right;
+}
+
+/* Modal de WhatsApp */
+.whatsapp-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    animation: fadeIn 0.3s ease;
+}
+
+.whatsapp-modal-content {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: slideIn 0.3s ease;
+}
+
+.whatsapp-modal-content h3 {
+    margin-top: 0;
+    color: #4b0082;
+    font-size: 1.3rem;
+}
+
+.whatsapp-modal-content p {
+    color: #666;
+    margin-bottom: 15px;
+}
+
+.whatsapp-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.whatsapp-btn {
+    background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+    color: white;
+    padding: 12px 15px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.whatsapp-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+}
+
+.close-whatsapp-btn {
+    background-color: #6c757d;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    width: 100%;
+    margin-top: 10px;
+    transition: background-color 0.3s;
+}
+
+.close-whatsapp-btn:hover {
+    background-color: #5a6268;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .editar-pedidos-container {
+        padding: 10px;
+    }
+    
+    .filter-row {
+        flex-direction: column;
+    }
+    
+    .filter-group {
+        min-width: 100%;
+    }
+    
+    .editable-table {
+        font-size: 11px;
+    }
+    
+    .editable-table th,
+    .editable-table td {
+        padding: 4px;
+    }
+    
+    .botones button {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
 }
