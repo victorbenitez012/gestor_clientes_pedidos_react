@@ -1,268 +1,273 @@
-import { Pedido } from '../types/types';
+// ============ CLIENTES ============
 
-// ============ FUNCIONES PARA CLIENTES ============
+// Buscar clientes con paginación
+export const buscarClientes = async (search?: string, pagina: number = 1, registrosPorPagina: number = 50) => {
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    params.append('pagina', pagina.toString());
+    params.append('registros_por_pagina', registrosPorPagina.toString());
 
-export const buscarClientes = async (termino?: string) => {
-    const url = termino
-        ? `http://localhost/gestor_clientes_pedidos_react/backend/clientes/buscar.php?termino=${termino}`
-        : 'http://localhost/gestor_clientes_pedidos_react/backend/clientes/buscar.php';
+    const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/clientes/buscar.php?${params.toString()}`);
+    const data = await response.json();
 
-    const response = await fetch(url);
-    return await response.json();
-};
-
-export const buscarClientesParaAgregarPedido = async (termino: string) => {
-    try {
-        const response = await fetch(`/gestor_clientes_pedidos_react/backend/clientes/buscar.php?termino=${termino}`);
-        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-        return await response.json();
-    } catch (error) {
-        console.error('Error al buscar clientes:', error);
-        return [];
+    if (!response.ok || data.error) {
+        throw new Error(data.error || 'Error al buscar clientes');
     }
+
+    return data;
 };
 
-export const buscarClientesPorDireccionAgregar = async (direccion: string) => {
-    try {
-        const response = await fetch(`/gestor_clientes_pedidos_react/backend/clientes/buscar_direccion.php?direccion=${direccion}`);
-        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-        return await response.json();
-    } catch (error) {
-        console.error('Error al buscar por dirección:', error);
-        return [];
+// Buscar clientes para agregar pedido (autocompletado)
+export const buscarClientesParaAgregarPedido = async (search: string) => {
+    const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/clientes/buscar.php?search=${encodeURIComponent(search)}`);
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error('Error al buscar clientes');
     }
-};
 
-export const agregarClienteApi = async (clienteData: any) => {
-    try {
-        const response = await fetch('/gestor_clientes_pedidos_react/backend/clientes/agregar.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(clienteData)
-        });
-        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-        return await response.json();
-    } catch (error) {
-        console.error('Error al agregar cliente:', error);
-        throw error;
+    if (data.clientes && Array.isArray(data.clientes)) {
+        return data.clientes;
     }
+
+    return Array.isArray(data) ? data : [];
 };
 
-export const actualizarClienteApi = async (id: number, clienteData: any) => {
-    try {
-        const response = await fetch(`/gestor_clientes_pedidos_react/backend/clientes/editar.php?id=${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(clienteData)
-        });
-        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-        return await response.json();
-    } catch (error) {
-        console.error('Error al actualizar cliente:', error);
-        throw error;
+// Buscar clientes por dirección para agregar pedido
+export const buscarClientesPorDireccionAgregar = async (search: string) => {
+    const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/clientes/buscar_direccion.php?search=${encodeURIComponent(search)}`);
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error('Error al buscar por dirección');
     }
+
+    return Array.isArray(data) ? data : [];
 };
 
-export const eliminarClienteApi = async (id: number) => {
-    try {
-        const response = await fetch(`/gestor_clientes_pedidos_react/backend/clientes/eliminar.php?id=${id}`, {
-            method: 'DELETE',
-        });
-        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-        return await response.json();
-    } catch (error) {
-        console.error('Error al eliminar cliente:', error);
-        throw error;
+// Actualizar cliente
+export const actualizarCliente = async (id: number, cliente: any) => {
+    const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/clientes/actualizar.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id, ...cliente }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || data.error) {
+        throw new Error(data.error || 'Error al actualizar el cliente');
     }
+
+    return data;
 };
 
-export const buscarClientePorIdApi = async (id: number) => {
-    try {
-        const response = await fetch(`/gestor_clientes_pedidos_react/backend/clientes/buscar_por_id.php?id=${id}`);
-        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-        return await response.json();
-    } catch (error) {
-        console.error('Error al buscar cliente:', error);
-        throw error;
+// Agregar cliente
+export const agregarClienteApi = async (cliente: any) => {
+    const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/clientes/agregar.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(cliente),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || data.error) {
+        throw new Error(data.error || 'Error al guardar el cliente');
     }
+
+    return data;
 };
 
-// ============ FUNCIONES PARA REPARTIDORES ============
+// ============ PEDIDOS ============
 
-export const buscarRepartidores = async (termino?: string) => {
-    try {
-        const url = termino
-            ? `/gestor_clientes_pedidos_react/backend/repartidores/buscar.php?termino=${termino}`
-            : '/gestor_clientes_pedidos_react/backend/repartidores/index.php';
-
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-        return await response.json();
-    } catch (error) {
-        console.error('Error al buscar repartidores:', error);
-        return [];
-    }
-};
-
-export const agregarRepartidorApi = async (repartidorData: any) => {
-    try {
-        const response = await fetch('/gestor_clientes_pedidos_react/backend/repartidores/agregar.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(repartidorData)
-        });
-        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-        return await response.json();
-    } catch (error) {
-        console.error('Error al agregar repartidor:', error);
-        throw error;
-    }
-};
-
-export const actualizarRepartidorApi = async (id: number, repartidorData: any) => {
-    try {
-        const response = await fetch(`/gestor_clientes_pedidos_react/backend/repartidores/editar.php?id=${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(repartidorData)
-        });
-        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-        return await response.json();
-    } catch (error) {
-        console.error('Error al actualizar repartidor:', error);
-        throw error;
-    }
-};
-
-export const eliminarRepartidorApi = async (id: number) => {
-    try {
-        const response = await fetch(`/gestor_clientes_pedidos_react/backend/repartidores/eliminar.php?id=${id}`, {
-            method: 'DELETE',
-        });
-        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-        return await response.json();
-    } catch (error) {
-        console.error('Error al eliminar repartidor:', error);
-        throw error;
-    }
-};
-
-export const buscarRepartidorPorIdApi = async (id: number) => {
-    try {
-        const response = await fetch(`/gestor_clientes_pedidos_react/backend/repartidores/buscar_por_id.php?id=${id}`);
-        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-        return await response.json();
-    } catch (error) {
-        console.error('Error al buscar repartidor:', error);
-        throw error;
-    }
-};
-
-// ============ FUNCIONES PARA PEDIDOS ============
-
-export const fetchPedidos = async (
-    search: string,
-    searchSecondary: string,
-    fechaDesde: string,
-    fechaHasta: string
-): Promise<Pedido[]> => {
-    try {
-        const url = new URL('http://localhost/gestor_clientes_pedidos_react/backend/pedidos/editar_tabla.php');
-        if (search) url.searchParams.append('search', search);
-        if (searchSecondary) url.searchParams.append('search_secondary', searchSecondary);
-        if (fechaDesde) url.searchParams.append('fecha_desde', fechaDesde);
-        if (fechaHasta) url.searchParams.append('fecha_hasta', fechaHasta);
-
-        const response = await fetch(url.toString());
-        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-
-        const data = await response.json();
-
-        if (Array.isArray(data)) {
-            return data;
-        } else if (data.pedidos && Array.isArray(data.pedidos)) {
-            return data.pedidos;
-        } else if (data.error) {
-            throw new Error(data.error);
-        } else {
-            return [];
+// Cargar pedidos con filtros y paginación
+export const fetchPedidos = async (params: {
+    search?: string;
+    search_secondary?: string;
+    fecha_desde?: string;
+    fecha_hasta?: string;
+    repartidor_filtro?: string;
+    estado_filtro?: string;
+    pagina?: number;
+    registros_por_pagina?: number;
+}) => {
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== '') {
+            queryParams.append(key, value.toString());
         }
-    } catch (error) {
-        console.error('Error en fetchPedidos:', error);
-        throw error;
+    });
+
+    const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/pedidos/editar_tabla.php?${queryParams.toString()}`);
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error('Error al cargar pedidos');
     }
+
+    return data;
 };
 
-export const guardarCambios = async (pedidos: Pedido[]): Promise<void> => {
-    try {
-        const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/pedidos/editar_tabla.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ pedidos, update_all: true }),
-        });
+// Guardar cambios de pedidos
+export const guardarCambios = async (pedidos: any[]) => {
+    const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/pedidos/editar_tabla.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ pedidos, update_all: true }),
+    });
 
-        if (!response.ok) throw new Error('Error al guardar los cambios');
+    const data = await response.json();
 
-        const data = await response.json();
-        console.log('Cambios guardados:', data);
-    } catch (error) {
-        console.error('Error al guardar cambios:', error);
-        throw error;
+    if (!response.ok) {
+        throw new Error(data.error || 'Error al guardar cambios');
     }
+
+    return data;
 };
 
+// Agregar pedido completo
 export const agregarPedidoCompleto = async (pedidoData: any) => {
-    try {
-        const response = await fetch('/gestor_clientes_pedidos_react/backend/pedidos/agregar.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(pedidoData)
-        });
-        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-        return await response.json();
-    } catch (error) {
-        console.error('Error al agregar pedido:', error);
-        throw error;
+    const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/pedidos/agregar.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(pedidoData),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || data.error) {
+        throw new Error(data.error || 'Error al agregar pedido');
     }
+
+    return data;
 };
 
+// Obtener últimos pedidos de un cliente
 export const obtenerUltimosPedidosClienteAgregar = async (clienteId: number) => {
-    try {
-        const response = await fetch(`/gestor_clientes_pedidos_react/backend/pedidos/obtener_ultimos_pedidos.php?cliente_id=${clienteId}`);
-        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-        return await response.json();
-    } catch (error) {
-        console.error('Error al obtener últimos pedidos:', error);
-        return [];
+    const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/pedidos/obtener_ultimos_pedidos.php?cliente_id=${clienteId}`);
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error('Error al cargar últimos pedidos');
     }
+
+    return Array.isArray(data) ? data : [];
 };
 
-// ============ FUNCIONES PARA CONTADORES ============
+// ============ REPARTIDORES ============
 
-const convertirTotalANumero = (data: { total: string | number }) => {
-    return typeof data.total === 'string' ? parseInt(data.total, 10) : data.total;
+// Obtener todos los repartidores (activos) - SIN parámetros
+export const buscarRepartidores = async () => {
+    const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/repartidores/index.php');
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error('Error al cargar repartidores');
+    }
+
+    return Array.isArray(data) ? data : [];
 };
 
+// Buscar repartidores por término (nombre, apellido, teléfono) - CON búsqueda
+export const buscarRepartidoresPorTermino = async (search: string) => {
+    const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/repartidores/buscar.php?search=${encodeURIComponent(search)}`);
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error('Error al buscar repartidores');
+    }
+
+    return Array.isArray(data) ? data : [];
+};
+
+// Agregar repartidor
+export const agregarRepartidorApi = async (repartidor: any) => {
+    const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/repartidores/agregar.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(repartidor),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || data.error) {
+        throw new Error(data.error || 'Error al guardar el repartidor');
+    }
+
+    return data;
+};
+
+// Actualizar repartidor
+export const actualizarRepartidorApi = async (id: number, repartidor: any) => {
+    const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/repartidores/actualizar.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id, ...repartidor }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || data.error) {
+        throw new Error(data.error || 'Error al actualizar el repartidor');
+    }
+
+    return data;
+};
+
+// Eliminar repartidor
+export const eliminarRepartidorApi = async (id: number) => {
+    const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/repartidores/eliminar.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || data.error) {
+        throw new Error(data.error || 'Error al eliminar el repartidor');
+    }
+
+    return data;
+};
+
+// ============ ESTADÍSTICAS ============
+
+// Contar registros de una tabla
 export const contarRegistros = async (tabla: string) => {
-    try {
-        const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/contar_registros.php?tabla=${tabla}`);
-        if (!response.ok) throw new Error(`Error: ${response.status}`);
-        const data = await response.json();
-        return convertirTotalANumero(data) || 0;
-    } catch (error) {
-        console.error('Error contando registros:', error);
-        throw error;
+    const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/contar_registros.php?tabla=${tabla}`);
+    const data = await response.json();
+
+    if (!response.ok || data.error) {
+        throw new Error(data.error || 'Error al contar registros');
     }
+
+    return data.total || 0;
 };
 
+// Contar pedidos por estado
 export const contarPedidosPorEstado = async (estado: string) => {
-    try {
-        const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/contar_pedidos.php?estado=${estado}`);
-        if (!response.ok) throw new Error(`Error: ${response.status}`);
-        const data = await response.json();
-        return convertirTotalANumero(data) || 0;
-    } catch (error) {
-        console.error('Error contando pedidos por estado:', error);
-        throw error;
+    const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/contar_pedidos_estado.php?estado=${estado}`);
+    const data = await response.json();
+
+    if (!response.ok || data.error) {
+        throw new Error(data.error || 'Error al contar pedidos');
     }
+
+    return data.total || 0;
 };

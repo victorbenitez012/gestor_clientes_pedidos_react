@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { contarRegistros, contarPedidosPorEstado } from '../../services/api';
-import '../../css/styles.css'; // Importa el archivo CSS
+import '../../css/styles.css';
 
 const Dashboard: React.FC = () => {
     const [estadisticas, setEstadisticas] = useState({
@@ -20,25 +20,39 @@ const Dashboard: React.FC = () => {
     useEffect(() => {
         const cargarEstadisticas = async () => {
             try {
-                const totalClientes = await contarRegistros('clientes');
-                const totalPedidos = await contarRegistros('pedidos');
-                const totalRepartidores = await contarRegistros('repartidores');
-                const pedidosPendientes = await contarPedidosPorEstado('pendiente');
-                const pedidosEnProceso = await contarPedidosPorEstado('en proceso');
-                const pedidosEntregados = await contarPedidosPorEstado('entregado');
-                const pedidosFinalizados = await contarPedidosPorEstado('finalizado');
-                const pedidosEnCuenta = await contarPedidosPorEstado('cuenta');
+                console.log('🟢 Iniciando carga de estadísticas...');
 
-                console.log('Estad�sticas cargadas:', {
-                    totalClientes,
-                    totalPedidos,
-                    totalRepartidores,
-                    pedidosPendientes,
-                    pedidosEnProceso,
-                    pedidosEntregados,
-                    pedidosFinalizados,
-                    pedidosEnCuenta,
-                }); // Depuraci�n
+                console.log('📊 Cargando totalClientes...');
+                const totalClientes = await contarRegistros('clientes');
+                console.log('✅ totalClientes:', totalClientes);
+
+                console.log('📊 Cargando totalPedidos...');
+                const totalPedidos = await contarRegistros('pedidos');
+                console.log('✅ totalPedidos:', totalPedidos);
+
+                console.log('📊 Cargando totalRepartidores...');
+                const totalRepartidores = await contarRegistros('repartidores');
+                console.log('✅ totalRepartidores:', totalRepartidores);
+
+                console.log('📊 Cargando pedidosPendientes...');
+                const pedidosPendientes = await contarPedidosPorEstado('Pendiente');
+                console.log('✅ pedidosPendientes:', pedidosPendientes);
+
+                console.log('📊 Cargando pedidosEnProceso...');
+                const pedidosEnProceso = await contarPedidosPorEstado('En Proceso');
+                console.log('✅ pedidosEnProceso:', pedidosEnProceso);
+
+                console.log('📊 Cargando pedidosEntregados...');
+                const pedidosEntregados = await contarPedidosPorEstado('Entregado');
+                console.log('✅ pedidosEntregados:', pedidosEntregados);
+
+                console.log('📊 Cargando pedidosFinalizados...');
+                const pedidosFinalizados = await contarPedidosPorEstado('Finalizado');
+                console.log('✅ pedidosFinalizados:', pedidosFinalizados);
+
+                console.log('📊 Cargando pedidosEnCuenta...');
+                const pedidosEnCuenta = await contarPedidosPorEstado('Cuenta');
+                console.log('✅ pedidosEnCuenta:', pedidosEnCuenta);
 
                 setEstadisticas({
                     totalClientes,
@@ -50,9 +64,11 @@ const Dashboard: React.FC = () => {
                     pedidosFinalizados,
                     pedidosEnCuenta,
                 });
+
+                console.log('🎉 Todas las estadísticas cargadas correctamente!');
             } catch (err) {
-                setError('Error al cargar las estad�sticas. Int�ntalo de nuevo.');
-                console.error(err);
+                console.error('❌ ERROR EN LA PETICIÓN:', err);
+                setError('Error al cargar las estadísticas. Inténtalo de nuevo.');
             } finally {
                 setLoading(false);
             }
@@ -62,13 +78,13 @@ const Dashboard: React.FC = () => {
     }, []);
 
     if (loading) {
-        return <p>Cargando estad�sticas...</p>;
+        return <p>Cargando estadísticas...</p>;
     }
 
     return (
         <div className="container">
-            <img src="/logoprincipal.png" alt="Logo Principal" />
-            <h1>Gestion� tus clientes y pedidos de forma f�cil y r�pida</h1>
+            <img src="/logoprincipal.png" alt="Logo Principal" onError={(e) => console.error('Error cargando logo:', e)} />
+            <h1>Gestiona tus clientes y pedidos de forma fácil y rápida</h1>
             <p>Administra tus <strong>Clientes, Pedidos y Repartidores</strong> desde esta plataforma de manera eficiente.</p>
 
             <nav>
@@ -80,12 +96,12 @@ const Dashboard: React.FC = () => {
             </nav>
 
             <section>
-                <h2>Estad�sticas r�pidas</h2>
+                <h2>Estadísticas rápidas</h2>
                 {error ? (
                     <p style={{ color: 'red' }}>{error}</p>
                 ) : (
                     <>
-                        <p>Obt�n un resumen r�pido de los datos registrados en el sistema:</p>
+                        <p>Obtén un resumen rápido de los datos registrados en el sistema:</p>
                         <ul className="stats">
                             <li>Total de Clientes registrados: <strong className="total-clientes">{estadisticas.totalClientes}</strong></li>
                             <li>Total de Pedidos registrados: <strong className="total-pedidos">{estadisticas.totalPedidos}</strong></li>

@@ -674,7 +674,7 @@ const AgregarPedido: React.FC = () => {
                             <button type="button" onClick={limpiarFormulario} className="btn-limpiar-vertical">
                                 🧹 Limpiar Formulario
                             </button>
-                            <a href="/gestor_clientes_pedidos_react/pedidos/index.php" className="btn-volver-vertical">
+                            <a href="/gestor_clientes_pedidos_react/pedidos" className="btn-volver-vertical">
                                 ← Volver
                             </a>
                         </div>

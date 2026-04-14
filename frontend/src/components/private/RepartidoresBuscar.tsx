@@ -1,25 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { buscarRepartidores } from '../../services/api';
-import { RepartidorRow } from '../../types/types';
+import { buscarRepartidores, buscarRepartidoresPorTermino, eliminarRepartidorApi } from '../../services/api';
 import '../../css/styles.css';
 
 const RepartidoresBuscar: React.FC = () => {
     const [q, setQ] = useState('');
     const [applied, setApplied] = useState('');
-    const [rows, setRows] = useState<RepartidorRow[]>([]);
+    const [rows, setRows] = useState<any[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [mensaje, setMensaje] = useState<string | null>(null);
 
     useEffect(() => {
         const load = async () => {
             setLoading(true);
             setError(null);
             try {
-                const data = await buscarRepartidores(applied || undefined);
+                let data;
+                if (applied) {
+                    // Si hay búsqueda, usar la función con parámetro
+                    data = await buscarRepartidoresPorTermino(applied);
+                } else {
+                    // Si no hay búsqueda, usar la función sin parámetros
+                    data = await buscarRepartidores();
+                }
                 setRows(data);
             } catch (e) {
-                setError('No se pudieron cargar los repartidores.');
+                setError('❌ No se pudieron cargar los repartidores.');
                 console.error(e);
             } finally {
                 setLoading(false);
@@ -28,59 +35,119 @@ const RepartidoresBuscar: React.FC = () => {
         load();
     }, [applied]);
 
+    const handleBuscar = () => {
+        setApplied(q.trim());
+    };
+
+    const handleLimpiar = () => {
+        setQ('');
+        setApplied('');
+    };
+
+    const handleEliminar = async (id: number, nombre: string) => {
+        if (window.confirm(`¿Estás seguro de eliminar al repartidor ${nombre}?`)) {
+            try {
+                await eliminarRepartidorApi(id);
+                setMensaje(`✅ Repartidor ${nombre} eliminado correctamente`);
+                // Recargar la lista
+                const data = await buscarRepartidores();
+                setRows(data);
+                setTimeout(() => setMensaje(null), 3000);
+            } catch (e) {
+                setError('❌ Error al eliminar el repartidor');
+                console.error(e);
+                setTimeout(() => setError(null), 3000);
+            }
+        }
+    };
+
     return (
         <div className="container">
-            <h1>Buscar repartidores</h1>
-            <ul className="menu" style={{ marginBottom: '1rem' }}>
-                <li>
-                    <Link to="/repartidores">Volver</Link>
-                </li>
-                <li>
-                    <Link to="/dashboard">Inicio</Link>
-                </li>
-            </ul>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1rem' }}>
+            <img src="/logoprincipal.png" alt="Logo Principal" className="logo" />
+            <h1>🔍 Buscar Repartidores</h1>
+
+            <nav>
+                <ul className="menu">
+                    <li><Link to="/repartidores">← Volver a Repartidores</Link></li>
+                    <li><Link to="/dashboard">📊 Dashboard</Link></li>
+                </ul>
+            </nav>
+
+            <div className="buscador-clientes">
                 <input
                     type="search"
-                    placeholder="Nombre, apellido, tel�fono�"
+                    placeholder="Buscar por nombre, apellido o teléfono..."
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
-                    style={{ minWidth: 240 }}
+                    onKeyPress={(e) => e.key === 'Enter' && handleBuscar()}
                 />
-                <button type="button" onClick={() => setApplied(q.trim())}>
-                    Buscar
+                <button className="btn-buscar" onClick={handleBuscar}>
+                    🔍 Buscar
                 </button>
-                <button type="button" onClick={() => { setQ(''); setApplied(''); }}>
-                    Ver todos
+                <button className="btn-limpiar" onClick={handleLimpiar}>
+                    🧹 Limpiar
                 </button>
             </div>
-            {loading && <p>Cargando�</p>}
-            {error && <p style={{ color: 'red' }}>{error}</p>}
+
+            {mensaje && <div className="mensaje-exito">{mensaje}</div>}
+            {error && <div className="mensaje-error">{error}</div>}
+
+            {loading && <div className="loading">🔄 Cargando repartidores...</div>}
+
             {!loading && !error && (
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                        <tr>
-                            <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>ID</th>
-                            <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>Nombre</th>
-                            <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>Apellido</th>
-                            <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>Direcci�n</th>
-                            <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>Tel�fono</th>
-                            <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>Obs.</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {rows.map((r) => (
-                            <tr key={r.id}>
-                                <td style={{ padding: '6px 0', borderBottom: '1px solid #eee' }}>{r.id}</td>
-                                <td style={{ padding: '6px 0', borderBottom: '1px solid #eee' }}>{r.nombre}</td>
-                                <td style={{ padding: '6px 0', borderBottom: '1px solid #eee' }}>{r.apellido}</td>
-                                <td style={{ padding: '6px 0', borderBottom: '1px solid #eee' }}>{r.direccion}</td>
-                                <td style={{ padding: '6px 0', borderBottom: '1px solid #eee' }}>{r.telefono}</td>
-                                <td style={{ padding: '6px 0', borderBottom: '1px solid #eee' }}>{r.observacion || '�'}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                <>
+                    <div className="tabla-info">
+                        📄 Mostrando {rows.length} repartidor(es)
+                    </div>
+
+                    <div className="tabla-container">
+                        <table className="tabla-clientes">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre</th>
+                                    <th>Apellido</th>
+                                    <th>Teléfono</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {rows.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} className="text-center">
+                                            📭 No se encontraron repartidores
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    rows.map((r) => (
+                                        <tr key={r.id}>
+                                            <td>{r.id}</td>
+                                            <td>{r.nombre || '—'}</td>
+                                            <td>{r.apellido || '—'}</td>
+                                            <td>{r.telefono || '—'}</td>
+                                            <td className="acciones">
+                                                <button
+                                                    className="btn-editar"
+                                                    onClick={() => window.location.href = `/repartidores/editar/${r.id}`}
+                                                    title="Editar repartidor"
+                                                >
+                                                    ✏️ Editar
+                                                </button>
+                                                <button
+                                                    className="btn-eliminar"
+                                                    onClick={() => handleEliminar(r.id, r.nombre)}
+                                                    title="Eliminar repartidor"
+                                                >
+                                                    🗑️ Eliminar
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </>
             )}
         </div>
     );

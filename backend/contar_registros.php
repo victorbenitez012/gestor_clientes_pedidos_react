@@ -1,33 +1,31 @@
 <?php
-// Archivo: contar_registros.php
-// Habilitar CORS
-header('Content-Type: application/json'); // Asegurar que la respuesta sea JSON
-header('Access-Control-Allow-Origin: *'); // Permitir solicitudes desde cualquier origen
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS'); // M�todos permitidos
-header('Access-Control-Allow-Headers: Content-Type'); // Encabezados permitidos
-require_once __DIR__ . './conexion.php';
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
 
-// Verificar si el par�metro 'tabla' est� presente en la solicitud GET
-if (isset($_GET['tabla'])) {
-    $tabla = $_GET['tabla'];
+require_once __DIR__ . '/conexion.php';
 
-    try {
-        // Consulta SQL para contar los registros de la tabla
-        $query = "SELECT COUNT(*) AS total FROM $tabla";
-        
-        // Ejecutar la consulta
-        $resultado = ejecutarQuery($query);
+// No verificar autenticación
+if (!isset($_GET['tabla'])) {
+    echo json_encode(['error' => 'Falta tabla']);
+    exit();
+}
 
-        // Obtener el resultado
-        $fila = $resultado->fetch_assoc();
-        
-        // Devolver el total de registros en formato JSON
-        echo json_encode(['total' => $fila['total']]);
-    } catch (Exception $e) {
-        // Si ocurre un error, devolver un mensaje de error en JSON
-        echo json_encode(['error' => $e->getMessage()]);
-    }
-} else {
-    echo json_encode(['error' => 'El par�metro "tabla" es requerido.']);
+$tabla = $_GET['tabla'];
+
+$tablasPermitidas = ['clientes', 'pedidos', 'repartidores'];
+if (!in_array($tabla, $tablasPermitidas)) {
+    echo json_encode(['error' => 'Tabla no válida']);
+    exit();
+}
+
+try {
+    $conexion = conectarBD();
+    $query = "SELECT COUNT(*) as total FROM $tabla";
+    $resultado = $conexion->query($query);
+    $fila = $resultado->fetch_assoc();
+    echo json_encode(['total' => (int)$fila['total']]);
+    $conexion->close();
+} catch (Exception $e) {
+    echo json_encode(['error' => $e->getMessage()]);
 }
 ?>

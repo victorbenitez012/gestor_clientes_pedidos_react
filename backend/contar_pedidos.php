@@ -1,34 +1,49 @@
 <?php
-// Archivo: contar_pedidos.php
-// Habilitar CORS
-header('Content-Type: application/json'); // Asegurar que la respuesta sea JSON
-header('Access-Control-Allow-Origin: *'); // Permitir solicitudes desde cualquier origen
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS'); // M�todos permitidos
-header('Access-Control-Allow-Headers: Content-Type'); // Encabezados permitidos
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
 
-require_once __DIR__ . './conexion.php';
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
-// Verificar si el par�metro 'estado' est� presente en la solicitud GET
+require_once __DIR__ . '/conexion.php';
+$conexion = conectarBD();
+
 if (isset($_GET['estado'])) {
     $estado = $_GET['estado'];
-
+    
+    // Validar estado permitido
+    $estadosPermitidos = ['pendiente', 'en proceso', 'entregado', 'finalizado', 'cuenta'];
+    if (!in_array(strtolower($estado), $estadosPermitidos)) {
+        echo json_encode(['error' => 'Estado no válido']);
+        $conexion->close();
+        exit();
+    }
+    
     try {
-        // Consulta SQL para contar los pedidos por estado
-        $query = "SELECT COUNT(*) AS total FROM pedidos WHERE estado = ?";
+        $query = "SELECT COUNT(*) as total FROM pedidos WHERE LOWER(estado) = LOWER(?)";
+        $stmt = $conexion->prepare($query);
+        $stmt->bind_param("s", $estado);
+        $stmt->execute();
+        $resultado = $stmt->get_result();
         
-        // Ejecutar la consulta con el par�metro 'estado'
-        $resultado = ejecutarQuery($query, [$estado]);
-
-        // Obtener el resultado
-        $fila = $resultado->fetch_assoc();
+        if ($resultado) {
+            $fila = $resultado->fetch_assoc();
+            echo json_encode(['total' => (int)$fila['total']]);
+        } else {
+            echo json_encode(['error' => 'Error al contar pedidos']);
+        }
         
-        // Devolver el total de pedidos en formato JSON
-        echo json_encode(['total' => $fila['total']]);
+        $stmt->close();
     } catch (Exception $e) {
-        // Si ocurre un error, devolver un mensaje de error en JSON
         echo json_encode(['error' => $e->getMessage()]);
     }
+    
+    $conexion->close();
 } else {
-    echo json_encode(['error' => 'El par�metro "estado" es requerido.']);
+    echo json_encode(['error' => 'El parámetro "estado" es requerido']);
 }
 ?>

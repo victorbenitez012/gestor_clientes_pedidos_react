@@ -812,7 +812,7 @@ const EditarTablaPedidos: React.FC = () => {
             )}
 
             <ul className="menu">
-                <li><a href="/gestor_clientes_pedidos_react/pedidos/index.php">🔙 Volver</a></li>
+                <li><a href="/gestor_clientes_pedidos_react/pedidos">🔙 Volver</a></li>
             </ul>
         </div>
     );

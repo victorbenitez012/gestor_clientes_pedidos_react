@@ -11,26 +11,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 include '../conexion.php';
-$conexion = conectarBD();
+<?php
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
 
-if (!$conexion) {
-    echo json_encode(['error' => 'Error de conexión a la base de datos']);
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
     exit();
 }
 
-$query = "SELECT id, nombre, apellido, telefono FROM repartidores ORDER BY nombre, apellido";
+include '../conexion.php';
+$conexion = conectarBD();
+
+// Obtener todos los repartidores activos (sin paginación, para selects)
+$query = "SELECT id, nombre, apellido, telefono FROM repartidores WHERE activo = 1 ORDER BY nombre ASC";
 $resultado = $conexion->query($query);
 
 $repartidores = [];
-if ($resultado && $resultado->num_rows > 0) {
-    while ($fila = $resultado->fetch_assoc()) {
-        $repartidores[] = [
-            'id' => (int)$fila['id'],
-            'nombre' => $fila['nombre'],
-            'apellido' => $fila['apellido'],
-            'telefono' => $fila['telefono'] ?? ''
-        ];
-    }
+while ($fila = $resultado->fetch_assoc()) {
+    $repartidores[] = [
+        'id' => (int)$fila['id'],
+        'nombre' => $fila['nombre'] ?: '',
+        'apellido' => $fila['apellido'] ?: '',
+        'telefono' => $fila['telefono'] ?: ''
+    ];
 }
 
 echo json_encode($repartidores);

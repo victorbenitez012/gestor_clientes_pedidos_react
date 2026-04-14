@@ -6,9 +6,9 @@ const Repartidores: React.FC = () => {
         <div className="container">
             <h1>Gestionar Repartidores</h1>
             <ul className="menu">
-                <li><Link to="/repartidores/buscar">Buscar Repartidor</Link></li>
-                <li><Link to="/repartidores/agregar">Agregar Repartidor</Link></li>
-                <li><Link to="/">Volver</Link></li>
+                <li><Link to="/RepartidoresBuscar">Buscar Repartidor</Link></li>
+                <li><Link to="/RepartidoresAgregar">Agregar Repartidor</Link></li>
+                <li><Link to="/Dashboard">Volver</Link></li>
             </ul>
         </div>
     );
