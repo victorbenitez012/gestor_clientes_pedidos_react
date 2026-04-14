@@ -6,7 +6,7 @@ export const buscarClientes = async () => {
     return await response.json();
 };
 
-// Función genérica para convertir 'total' a número
+// Funciï¿½n genï¿½rica para convertir 'total' a nï¿½mero
 const convertirTotalANumero = (data: { total: string | number }) => {
     return typeof data.total === 'string' ? parseInt(data.total, 10) : data.total;
 };
@@ -46,7 +46,7 @@ export const contarPedidosPorEstado = async (estado: string) => {
 };
 
 /**
- * Función para obtener los pedidos desde el backend.
+ * Funciï¿½n para obtener los pedidos desde el backend.
  */
 export const fetchPedidos = async (
     search: string,
@@ -55,7 +55,7 @@ export const fetchPedidos = async (
     fechaHasta: string
 ): Promise<Pedido[]> => {
     try {
-        // Construir la URL con los parámetros de búsqueda
+        // Construir la URL con los parï¿½metros de bï¿½squeda
         const url = new URL('http://localhost/gestor_clientes_pedidos_react/backend/pedidos/editar_tabla.php');
         url.searchParams.append('search', search);
         url.searchParams.append('search_secondary', searchSecondary);

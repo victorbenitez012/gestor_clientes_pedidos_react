@@ -8,7 +8,7 @@ const Login = () => {
     const navigate = useNavigate();
 
     const handleLogin = () => {
-        // Simular autenticación
+        // Simular autenticaciï¿½n
         if (username === 'admin' && password === 'admin') {
             localStorage.setItem('user', JSON.stringify({ username: 'admin', rol: 'admin' }));
             navigate('/dashboard');
@@ -31,11 +31,11 @@ const Login = () => {
             />
             <input
                 type="password"
-                placeholder="Contraseña"
+                placeholder="Contraseï¿½a"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
             />
-            <button onClick={handleLogin}>Iniciar Sesión</button>
+            <button onClick={handleLogin}>Iniciar Sesiï¿½n</button>
             {error && <p style={{ color: 'red' }}>{error}</p>}
         </div>
     );
