@@ -1,14 +1,14 @@
 <?php
 header('Content-Type: application/json'); // Asegurar que la respuesta sea JSON
 header('Access-Control-Allow-Origin: *'); // Permitir solicitudes desde cualquier origen
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS'); // Mï¿½todos permitidos
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS'); // Métodos permitidos
 header('Access-Control-Allow-Headers: Content-Type'); // Encabezados permitidos
 
-// Incluir archivo de conexiï¿½n
+// Incluir archivo de conexión
 include '../conexion.php';
 $conexion = conectarBD();
 
-// Obtener y sanitizar parï¿½metros de bï¿½squeda
+// Obtener y sanitizar parámetros de búsqueda
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 $search_secondary = isset($_GET['search_secondary']) ? trim($_GET['search_secondary']) : '';
 $fecha_desde = isset($_GET['fecha_desde']) ? trim($_GET['fecha_desde']) : '';
@@ -27,7 +27,7 @@ $query = "
     LEFT JOIN repartidores ON pedidos.repartidor_id = repartidores.id
 ";
 
-// Agregar condiciones de bï¿½squeda
+// Agregar condiciones de búsqueda
 $whereConditions = [];
 $params = [];
 $types = '';
@@ -46,7 +46,7 @@ if (!empty($search)) {
     )";
     $searchParam = "%$search%";
     $params = array_merge($params, array_fill(0, 9, $searchParam));
-    $types .= str_repeat('s', 9); // 9 parï¿½metros de tipo string
+    $types .= str_repeat('s', 9); // 9 parámetros de tipo string
 }
 
 if (!empty($search_secondary)) {
@@ -63,19 +63,19 @@ if (!empty($search_secondary)) {
     )";
     $searchSecondaryParam = "%$search_secondary%";
     $params = array_merge($params, array_fill(0, 9, $searchSecondaryParam));
-    $types .= str_repeat('s', 9); // 9 parï¿½metros de tipo string
+    $types .= str_repeat('s', 9); // 9 parámetros de tipo string
 }
 
 if (!empty($fecha_desde)) {
     $whereConditions[] = "pedidos.fecha_creacion >= ?";
     $params[] = $fecha_desde;
-    $types .= 's'; // Parï¿½metro de tipo string
+    $types .= 's'; // Parámetro de tipo string
 }
 
 if (!empty($fecha_hasta)) {
     $whereConditions[] = "pedidos.fecha_creacion <= ?";
     $params[] = $fecha_hasta;
-    $types .= 's'; // Parï¿½metro de tipo string
+    $types .= 's'; // Parámetro de tipo string
 }
 
 if (!empty($whereConditions)) {
@@ -102,6 +102,6 @@ if ($stmt) {
     echo json_encode(['error' => 'Error al preparar la consulta: ' . $conexion->error]);
 }
 
-// Cerrar la conexiï¿½n
+// Cerrar la conexión
 $conexion->close();
 ?>

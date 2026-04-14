@@ -22,7 +22,7 @@ const EditarTablaPedidos = () => {
                 setError(null);
             } catch (err) {
                 console.error('Error cargando pedidos:', err);
-                setError('Error al cargar los pedidos. Intï¿½ntalo de nuevo.');
+                setError('Error al cargar los pedidos. Inténtalo de nuevo.');
             }
         };
 
@@ -71,7 +71,7 @@ const EditarTablaPedidos = () => {
             {mensaje && <p style={{ color: 'green' }}>{mensaje}</p>}
             {error && <p style={{ color: 'red' }}>{error}</p>}
 
-            {/* Formulario de bï¿½squeda */}
+            {/* Formulario de búsqueda */}
             <form className={styles.form}>
                 <input
                     type="text"
@@ -104,15 +104,15 @@ const EditarTablaPedidos = () => {
                     <tr>
                         <th>#</th>
                         <th>Tipo Pedido</th>
-                        <th>Direcciï¿½n</th>
+                        <th>Dirección</th>
                         <th>Barrio</th>
-                        <th>Telï¿½fono</th>
+                        <th>Teléfono</th>
                         <th>Nombre Cliente</th>
-                        <th>Observaciï¿½n Cliente</th>
+                        <th>Observación Cliente</th>
                         <th>Estado</th>
                         <th>Precio</th>
-                        <th>Observaciï¿½n Pedido</th>
-                        <th>Fecha de Creaciï¿½n</th>
+                        <th>Observación Pedido</th>
+                        <th>Fecha de Creación</th>
                         <th>Repartidor</th>
                     </tr>
                 </thead>
@@ -166,7 +166,7 @@ const EditarTablaPedidos = () => {
                                     onChange={(e) => handleCambioPedido(index, 'repartidor_id', e.target.value ? parseInt(e.target.value) : null)}
                                 >
                                     <option value="">Sin asignar</option>
-                                    {/* Aquï¿½ deberï¿½as mapear la lista de repartidores si la tienes */}
+                                    {/* Aquí deberías mapear la lista de repartidores si la tienes */}
                                 </select>
                             </td>
                         </tr>

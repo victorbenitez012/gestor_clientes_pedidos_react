@@ -12,7 +12,7 @@ const App = () => {
     return (
         <Router basename="/gestor_clientes_pedidos_react">
             <Routes>
-                {/* Ruta pï¿½blica */}
+                {/* Ruta pública */}
                 <Route path="/login" element={<Login />} />
 
                 {/* Ruta protegida: Dashboard (accesible para admin y user) */}

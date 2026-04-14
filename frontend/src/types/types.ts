@@ -5,7 +5,7 @@ export interface Cliente {
     telefono: string;
 }
 
-// Agrega esto para evitar el error de mï¿½dulos aislados
+// Agrega esto para evitar el error de módulos aislados
 export { };
 
 export interface Pedido {
