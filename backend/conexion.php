@@ -4,10 +4,10 @@
 require_once __DIR__ . './config.php';
 
 /**
- * Función para conectar a la base de datos.
+ * Funciï¿½n para conectar a la base de datos.
  *
- * @return mysqli Retorna la conexión a la base de datos.
- * @throws Exception Si la conexión falla.
+ * @return mysqli Retorna la conexiï¿½n a la base de datos.
+ * @throws Exception Si la conexiï¿½n falla.
  */
 function conectarBD() {
     $config = include __DIR__ . './config.php';
@@ -19,31 +19,31 @@ function conectarBD() {
     $conexion = new mysqli($host, $usuario, $contrasena, $base_datos);
 
     if ($conexion->connect_error) {
-        throw new Exception("Error de conexión: " . $conexion->connect_error);
+        throw new Exception("Error de conexiï¿½n: " . $conexion->connect_error);
     }
 
     return $conexion;
 }
 
 /**
- * Función para ejecutar una consulta SQL.
+ * Funciï¿½n para ejecutar una consulta SQL.
  *
  * @param string $query La consulta SQL que se desea ejecutar.
- * @param array $params Parámetros para la consulta preparada (opcional).
+ * @param array $params Parï¿½metros para la consulta preparada (opcional).
  * @return mixed Resultado de la consulta.
  * @throws Exception Si la consulta falla.
  */
 function ejecutarQuery($query, $params = []) {
     $conexion = conectarBD();
 
-    // Si hay parámetros, usar consultas preparadas
+    // Si hay parï¿½metros, usar consultas preparadas
     if (!empty($params)) {
         $stmt = $conexion->prepare($query);
         if (!$stmt) {
-            throw new Exception("Error en la preparación de la consulta: " . $conexion->error);
+            throw new Exception("Error en la preparaciï¿½n de la consulta: " . $conexion->error);
         }
 
-        // Vincular parámetros
+        // Vincular parï¿½metros
         $tipos = '';
         $valores = [];
         foreach ($params as $param) {
@@ -64,14 +64,14 @@ function ejecutarQuery($query, $params = []) {
         $resultado = $stmt->get_result();
         $stmt->close();
     } else {
-        // Si no hay parámetros, ejecutar la consulta directamente
+        // Si no hay parï¿½metros, ejecutar la consulta directamente
         $resultado = $conexion->query($query);
         if (!$resultado) {
             throw new Exception("Error en la consulta SQL: " . $conexion->error);
         }
     }
 
-    // Cerrar la conexión
+    // Cerrar la conexiï¿½n
     $conexion->close();
 
     return $resultado;

@@ -3,12 +3,12 @@
 // Habilitar CORS
 header('Content-Type: application/json'); // Asegurar que la respuesta sea JSON
 header('Access-Control-Allow-Origin: *'); // Permitir solicitudes desde cualquier origen
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS'); // Métodos permitidos
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS'); // Mï¿½todos permitidos
 header('Access-Control-Allow-Headers: Content-Type'); // Encabezados permitidos
 
 require_once __DIR__ . './conexion.php';
 
-// Verificar si el parámetro 'estado' está presente en la solicitud GET
+// Verificar si el parï¿½metro 'estado' estï¿½ presente en la solicitud GET
 if (isset($_GET['estado'])) {
     $estado = $_GET['estado'];
 
@@ -16,7 +16,7 @@ if (isset($_GET['estado'])) {
         // Consulta SQL para contar los pedidos por estado
         $query = "SELECT COUNT(*) AS total FROM pedidos WHERE estado = ?";
         
-        // Ejecutar la consulta con el parámetro 'estado'
+        // Ejecutar la consulta con el parï¿½metro 'estado'
         $resultado = ejecutarQuery($query, [$estado]);
 
         // Obtener el resultado
@@ -29,6 +29,6 @@ if (isset($_GET['estado'])) {
         echo json_encode(['error' => $e->getMessage()]);
     }
 } else {
-    echo json_encode(['error' => 'El parámetro "estado" es requerido.']);
+    echo json_encode(['error' => 'El parï¿½metro "estado" es requerido.']);
 }
 ?>

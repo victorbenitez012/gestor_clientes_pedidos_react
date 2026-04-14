@@ -3,11 +3,11 @@
 // Habilitar CORS
 header('Content-Type: application/json'); // Asegurar que la respuesta sea JSON
 header('Access-Control-Allow-Origin: *'); // Permitir solicitudes desde cualquier origen
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS'); // Métodos permitidos
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS'); // Mï¿½todos permitidos
 header('Access-Control-Allow-Headers: Content-Type'); // Encabezados permitidos
 require_once __DIR__ . './conexion.php';
 
-// Verificar si el parámetro 'tabla' está presente en la solicitud GET
+// Verificar si el parï¿½metro 'tabla' estï¿½ presente en la solicitud GET
 if (isset($_GET['tabla'])) {
     $tabla = $_GET['tabla'];
 
@@ -28,6 +28,6 @@ if (isset($_GET['tabla'])) {
         echo json_encode(['error' => $e->getMessage()]);
     }
 } else {
-    echo json_encode(['error' => 'El parámetro "tabla" es requerido.']);
+    echo json_encode(['error' => 'El parï¿½metro "tabla" es requerido.']);
 }
 ?>

@@ -29,7 +29,7 @@ const Dashboard: React.FC = () => {
                 const pedidosFinalizados = await contarPedidosPorEstado('finalizado');
                 const pedidosEnCuenta = await contarPedidosPorEstado('cuenta');
 
-                console.log('Estadísticas cargadas:', {
+                console.log('Estadï¿½sticas cargadas:', {
                     totalClientes,
                     totalPedidos,
                     totalRepartidores,
@@ -38,7 +38,7 @@ const Dashboard: React.FC = () => {
                     pedidosEntregados,
                     pedidosFinalizados,
                     pedidosEnCuenta,
-                }); // Depuración
+                }); // Depuraciï¿½n
 
                 setEstadisticas({
                     totalClientes,
@@ -51,7 +51,7 @@ const Dashboard: React.FC = () => {
                     pedidosEnCuenta,
                 });
             } catch (err) {
-                setError('Error al cargar las estadísticas. Inténtalo de nuevo.');
+                setError('Error al cargar las estadï¿½sticas. Intï¿½ntalo de nuevo.');
                 console.error(err);
             } finally {
                 setLoading(false);
@@ -62,13 +62,13 @@ const Dashboard: React.FC = () => {
     }, []);
 
     if (loading) {
-        return <p>Cargando estadísticas...</p>;
+        return <p>Cargando estadï¿½sticas...</p>;
     }
 
     return (
         <div className="container">
             <img src="/logoprincipal.png" alt="Logo Principal" />
-            <h1>Gestioná tus clientes y pedidos de forma fácil y rápida</h1>
+            <h1>Gestionï¿½ tus clientes y pedidos de forma fï¿½cil y rï¿½pida</h1>
             <p>Administra tus <strong>Clientes, Pedidos y Repartidores</strong> desde esta plataforma de manera eficiente.</p>
 
             <nav>
@@ -80,12 +80,12 @@ const Dashboard: React.FC = () => {
             </nav>
 
             <section>
-                <h2>Estadísticas rápidas</h2>
+                <h2>Estadï¿½sticas rï¿½pidas</h2>
                 {error ? (
                     <p style={{ color: 'red' }}>{error}</p>
                 ) : (
                     <>
-                        <p>Obtén un resumen rápido de los datos registrados en el sistema:</p>
+                        <p>Obtï¿½n un resumen rï¿½pido de los datos registrados en el sistema:</p>
                         <ul className="stats">
                             <li>Total de Clientes registrados: <strong className="total-clientes">{estadisticas.totalClientes}</strong></li>
                             <li>Total de Pedidos registrados: <strong className="total-pedidos">{estadisticas.totalPedidos}</strong></li>
