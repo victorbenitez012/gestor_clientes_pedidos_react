@@ -7,7 +7,12 @@ export const buscarClientes = async (search?: string, pagina: number = 1, regist
     params.append('pagina', pagina.toString());
     params.append('registros_por_pagina', registrosPorPagina.toString());
 
-    const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/clientes/buscar.php?${params.toString()}`);
+    const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/clientes/buscar.php?${params.toString()}`, {
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    });
     const data = await response.json();
 
     if (!response.ok || data.error) {
@@ -19,7 +24,12 @@ export const buscarClientes = async (search?: string, pagina: number = 1, regist
 
 // Buscar clientes para agregar pedido (autocompletado)
 export const buscarClientesParaAgregarPedido = async (search: string) => {
-    const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/clientes/buscar.php?search=${encodeURIComponent(search)}`);
+    const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/clientes/buscar.php?search=${encodeURIComponent(search)}`, {
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    });
     const data = await response.json();
 
     if (!response.ok) {
@@ -35,7 +45,12 @@ export const buscarClientesParaAgregarPedido = async (search: string) => {
 
 // Buscar clientes por dirección para agregar pedido
 export const buscarClientesPorDireccionAgregar = async (search: string) => {
-    const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/clientes/buscar_direccion.php?search=${encodeURIComponent(search)}`);
+    const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/clientes/buscar_direccion.php?search=${encodeURIComponent(search)}`, {
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    });
     const data = await response.json();
 
     if (!response.ok) {
@@ -49,6 +64,7 @@ export const buscarClientesPorDireccionAgregar = async (search: string) => {
 export const actualizarCliente = async (id: number, cliente: any) => {
     const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/clientes/actualizar.php', {
         method: 'POST',
+        credentials: 'include',
         headers: {
             'Content-Type': 'application/json',
         },
@@ -68,6 +84,7 @@ export const actualizarCliente = async (id: number, cliente: any) => {
 export const agregarClienteApi = async (cliente: any) => {
     const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/clientes/agregar.php', {
         method: 'POST',
+        credentials: 'include',
         headers: {
             'Content-Type': 'application/json',
         },
@@ -103,7 +120,12 @@ export const fetchPedidos = async (params: {
         }
     });
 
-    const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/pedidos/editar_tabla.php?${queryParams.toString()}`);
+    const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/pedidos/editar_tabla.php?${queryParams.toString()}`, {
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    });
     const data = await response.json();
 
     if (!response.ok) {
@@ -117,6 +139,7 @@ export const fetchPedidos = async (params: {
 export const guardarCambios = async (pedidos: any[]) => {
     const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/pedidos/editar_tabla.php', {
         method: 'POST',
+        credentials: 'include',
         headers: {
             'Content-Type': 'application/json',
         },
@@ -136,6 +159,7 @@ export const guardarCambios = async (pedidos: any[]) => {
 export const agregarPedidoCompleto = async (pedidoData: any) => {
     const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/pedidos/agregar.php', {
         method: 'POST',
+        credentials: 'include',
         headers: {
             'Content-Type': 'application/json',
         },
@@ -153,7 +177,12 @@ export const agregarPedidoCompleto = async (pedidoData: any) => {
 
 // Obtener últimos pedidos de un cliente
 export const obtenerUltimosPedidosClienteAgregar = async (clienteId: number) => {
-    const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/pedidos/obtener_ultimos_pedidos.php?cliente_id=${clienteId}`);
+    const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/pedidos/obtener_ultimos_pedidos.php?cliente_id=${clienteId}`, {
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    });
     const data = await response.json();
 
     if (!response.ok) {
@@ -167,7 +196,12 @@ export const obtenerUltimosPedidosClienteAgregar = async (clienteId: number) => 
 
 // Obtener todos los repartidores (activos) - SIN parámetros
 export const buscarRepartidores = async () => {
-    const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/repartidores/index.php');
+    const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/repartidores/index.php', {
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    });
     const data = await response.json();
 
     if (!response.ok) {
@@ -179,7 +213,12 @@ export const buscarRepartidores = async () => {
 
 // Buscar repartidores por término (nombre, apellido, teléfono) - CON búsqueda
 export const buscarRepartidoresPorTermino = async (search: string) => {
-    const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/repartidores/buscar.php?search=${encodeURIComponent(search)}`);
+    const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/repartidores/buscar.php?search=${encodeURIComponent(search)}`, {
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    });
     const data = await response.json();
 
     if (!response.ok) {
@@ -193,6 +232,7 @@ export const buscarRepartidoresPorTermino = async (search: string) => {
 export const agregarRepartidorApi = async (repartidor: any) => {
     const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/repartidores/agregar.php', {
         method: 'POST',
+        credentials: 'include',
         headers: {
             'Content-Type': 'application/json',
         },
@@ -212,6 +252,7 @@ export const agregarRepartidorApi = async (repartidor: any) => {
 export const actualizarRepartidorApi = async (id: number, repartidor: any) => {
     const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/repartidores/actualizar.php', {
         method: 'POST',
+        credentials: 'include',
         headers: {
             'Content-Type': 'application/json',
         },
@@ -231,6 +272,7 @@ export const actualizarRepartidorApi = async (id: number, repartidor: any) => {
 export const eliminarRepartidorApi = async (id: number) => {
     const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/repartidores/eliminar.php', {
         method: 'POST',
+        credentials: 'include',
         headers: {
             'Content-Type': 'application/json',
         },
@@ -250,7 +292,12 @@ export const eliminarRepartidorApi = async (id: number) => {
 
 // Contar registros de una tabla
 export const contarRegistros = async (tabla: string) => {
-    const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/contar_registros.php?tabla=${tabla}`);
+    const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/contar_registros.php?tabla=${tabla}`, {
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    });
     const data = await response.json();
 
     if (!response.ok || data.error) {
@@ -260,9 +307,14 @@ export const contarRegistros = async (tabla: string) => {
     return data.total || 0;
 };
 
-// Contar pedidos por estado
+// Contar pedidos por estado - CORREGIDO
 export const contarPedidosPorEstado = async (estado: string) => {
-    const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/contar_pedidos_estado.php?estado=${estado}`);
+    const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/contar_pedidos_estado.php?estado=${estado}`, {
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    });
     const data = await response.json();
 
     if (!response.ok || data.error) {
