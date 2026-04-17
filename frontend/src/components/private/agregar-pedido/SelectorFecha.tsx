@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 
 interface SelectorFechaProps {
     fechaSeleccionada: string;
@@ -18,10 +18,25 @@ const SelectorFecha: React.FC<SelectorFechaProps> = ({
     // Obtener fecha actual en formato YYYY-MM-DD
     const hoy = new Date().toISOString().split('T')[0];
 
+    // Calcular fecha por defecto (mañana)
+    const obtenerFechaManana = () => {
+        const manana = new Date();
+        manana.setDate(manana.getDate() + 1);
+        return manana.toISOString().split('T')[0];
+    };
+
     // Calcular fecha mínima (hoy) y máxima (6 meses después)
     const fechaMax = new Date();
     fechaMax.setMonth(fechaMax.getMonth() + 6);
     const fechaMaxStr = fechaMax.toISOString().split('T')[0];
+
+    // Efecto para asignar fecha por defecto cuando se programa
+    useEffect(() => {
+        if (esProgramado && !fechaSeleccionada) {
+            const fechaManana = obtenerFechaManana();
+            onFechaChange(fechaManana);
+        }
+    }, [esProgramado]); // Solo se ejecuta cuando cambia esProgramado
 
     // Formatear fecha para mostrar
     const formatearFecha = (fecha: string) => {
@@ -44,6 +59,21 @@ const SelectorFecha: React.FC<SelectorFechaProps> = ({
         return `📅 En ${diffDays} días`;
     };
 
+    const handleCheckboxChange = (checked: boolean) => {
+        onProgramadoChange(checked);
+
+        if (checked) {
+            // Si se marca y no hay fecha, asignar mañana
+            if (!fechaSeleccionada) {
+                const fechaManana = obtenerFechaManana();
+                onFechaChange(fechaManana);
+            }
+        } else {
+            // Si se desmarca, limpiar la fecha
+            onFechaChange('');
+        }
+    };
+
     return (
         <div className="selector-fecha-container" style={{ marginBottom: '15px' }}>
             <div className="form-group">
@@ -51,12 +81,7 @@ const SelectorFecha: React.FC<SelectorFechaProps> = ({
                     <input
                         type="checkbox"
                         checked={esProgramado}
-                        onChange={(e) => {
-                            onProgramadoChange(e.target.checked);
-                            if (!e.target.checked) {
-                                onFechaChange('');
-                            }
-                        }}
+                        onChange={(e) => handleCheckboxChange(e.target.checked)}
                         style={{ width: 'auto' }}
                     />
                     📅 Programar para fecha específica
@@ -75,6 +100,7 @@ const SelectorFecha: React.FC<SelectorFechaProps> = ({
                         <label>📆 Seleccionar fecha de entrega:</label>
                         <input
                             type="date"
+                            name="fecha_entrega_programada"  // ← IMPORTANTE: name para el formulario
                             value={fechaSeleccionada}
                             onChange={(e) => onFechaChange(e.target.value)}
                             min={hoy}

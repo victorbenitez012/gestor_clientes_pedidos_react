@@ -20,7 +20,6 @@ interface Pedido {
     cliente_observacion: string;
     repartidor_nombre?: string;
     repartidor_apellido?: string;
-    // NUEVOS CAMPOS
     fecha_entrega_programada?: string | null;
     es_programado?: number;
 }
@@ -51,6 +50,7 @@ const EditarTablaPedidos: React.FC = () => {
     const [fechaHasta, setFechaHasta] = useState('');
     const [repartidorFiltro, setRepartidorFiltro] = useState('');
     const [estadoFiltro, setEstadoFiltro] = useState('');
+    const [tipoEntregaFiltro, setTipoEntregaFiltro] = useState(''); // NUEVO FILTRO
     const [paginaActual, setPaginaActual] = useState(1);
     const [totalPaginas, setTotalPaginas] = useState(1);
     const [totalRegistros, setTotalRegistros] = useState(0);
@@ -82,7 +82,6 @@ const EditarTablaPedidos: React.FC = () => {
 
     // ============ FUNCIONES DE FORMATEO ============
 
-    // Capitalizar cada palabra (para dirección, nombre, barrio)
     const capitalizarPalabras = (texto: string): string => {
         if (!texto) return '';
         return texto
@@ -97,13 +96,11 @@ const EditarTablaPedidos: React.FC = () => {
             .join(' ');
     };
 
-    // Capitalizar solo la primera letra de la primera palabra (para observaciones)
     const capitalizarPrimeraLetra = (texto: string): string => {
         if (!texto) return '';
         return texto.charAt(0).toUpperCase() + texto.slice(1).toLowerCase();
     };
 
-    // Formatear un pedido completo
     const formatearPedido = (pedido: Pedido): Pedido => {
         return {
             ...pedido,
@@ -116,24 +113,10 @@ const EditarTablaPedidos: React.FC = () => {
         };
     };
 
-    // Formatear fecha para mostrar
     const formatearFecha = (fecha: string | null | undefined): string => {
         if (!fecha) return 'Inmediato';
         const [year, month, day] = fecha.split('-');
         return `${day}/${month}/${year}`;
-    };
-
-    // Obtener clase CSS para fecha programada
-    const getFechaClass = (fecha: string | null | undefined, esProgramado: number | undefined): string => {
-        if (!esProgramado || !fecha) return 'fecha-inmediato';
-
-        const hoy = new Date();
-        hoy.setHours(0, 0, 0, 0);
-        const fechaEntrega = new Date(fecha);
-
-        if (fechaEntrega < hoy) return 'fecha-vencida';
-        if (fechaEntrega.getTime() === hoy.getTime()) return 'fecha-hoy';
-        return 'fecha-futuro';
     };
 
     // Cargar repartidores
@@ -152,7 +135,7 @@ const EditarTablaPedidos: React.FC = () => {
         fetchRepartidores();
     }, []);
 
-    // Comparar si un pedido ha cambiado (ACTUALIZADO con fecha)
+    // Comparar si un pedido ha cambiado
     const haCambiado = (original: Pedido, actual: Pedido): boolean => {
         return original.tipo_pedido !== actual.tipo_pedido ||
             original.garrafa_10kg !== actual.garrafa_10kg ||
@@ -166,11 +149,38 @@ const EditarTablaPedidos: React.FC = () => {
             original.es_programado !== actual.es_programado;
     };
 
-    // Obtener solo los pedidos modificados
-    const obtenerPedidosModificados = (): Pedido[] => {
+    // Obtener solo los pedidos modificados con datos limpios para el backend
+    const obtenerPedidosModificados = (): any[] => {
         return pedidos.filter((pedido, index) => {
             const original = pedidosOriginales[index];
             return original && haCambiado(original, pedido);
+        }).map(pedido => {
+            let fechaProgramada = pedido.fecha_entrega_programada;
+            let esProgramado = pedido.es_programado || 0;
+
+            if (esProgramado === 1) {
+                if (!fechaProgramada || fechaProgramada === '' || fechaProgramada === '0000-00-00') {
+                    const manana = new Date();
+                    manana.setDate(manana.getDate() + 1);
+                    fechaProgramada = manana.toISOString().split('T')[0];
+                }
+            } else {
+                fechaProgramada = null;
+            }
+
+            return {
+                id: pedido.id,
+                tipo_pedido: pedido.tipo_pedido,
+                garrafa_10kg: pedido.garrafa_10kg || 0,
+                garrafa_15kg: pedido.garrafa_15kg || 0,
+                garrafa_45kg: pedido.garrafa_45kg || 0,
+                estado: pedido.estado,
+                precio: pedido.precio,
+                observacion_pedido: pedido.observacion_pedido || '',
+                repartidor_id: pedido.repartidor_id || null,
+                fecha_entrega_programada: fechaProgramada,
+                es_programado: esProgramado
+            };
         });
     };
 
@@ -186,6 +196,7 @@ const EditarTablaPedidos: React.FC = () => {
             if (fechaHasta) params.append('fecha_hasta', fechaHasta);
             if (repartidorFiltro) params.append('repartidor_filtro', repartidorFiltro);
             if (estadoFiltro) params.append('estado_filtro', estadoFiltro);
+            if (tipoEntregaFiltro) params.append('tipo_entrega_filtro', tipoEntregaFiltro); // NUEVO
             params.append('pagina', paginaActual.toString());
             params.append('registros_por_pagina', registrosPorPagina.toString());
 
@@ -219,7 +230,6 @@ const EditarTablaPedidos: React.FC = () => {
                 return;
             }
 
-            // Formatear cada pedido al cargar
             const pedidosFormateados = pedidosData.map(pedido => formatearPedido(pedido));
 
             setPedidos(pedidosFormateados);
@@ -237,9 +247,8 @@ const EditarTablaPedidos: React.FC = () => {
 
     useEffect(() => {
         cargarPedidos();
-    }, [search, searchSecondary, fechaDesde, fechaHasta, repartidorFiltro, estadoFiltro, paginaActual]);
+    }, [search, searchSecondary, fechaDesde, fechaHasta, repartidorFiltro, estadoFiltro, tipoEntregaFiltro, paginaActual]);
 
-    // Manejar cambios en pedidos con formateo opcional
     const handlePedidoChange = (index: number, field: keyof Pedido, value: any, aplicarFormateo: boolean = false) => {
         let valorFinal = value;
 
@@ -261,7 +270,6 @@ const EditarTablaPedidos: React.FC = () => {
         setPedidos(nuevosPedidos);
     };
 
-    // Manejar cambio de fecha programada
     const handleFechaProgramadaChange = (index: number, value: string) => {
         const nuevosPedidos = [...pedidos];
         nuevosPedidos[index] = {
@@ -272,7 +280,6 @@ const EditarTablaPedidos: React.FC = () => {
         setPedidos(nuevosPedidos);
     };
 
-    // Manejar toggle de checkbox programado
     const handleProgramadoToggle = (index: number, checked: boolean) => {
         const nuevosPedidos = [...pedidos];
         if (!checked) {
@@ -282,9 +289,8 @@ const EditarTablaPedidos: React.FC = () => {
                 fecha_entrega_programada: null
             };
         } else {
-            // Si activa programado y no tiene fecha, sugerir fecha por defecto (mañana)
             const fechaActual = nuevosPedidos[index].fecha_entrega_programada;
-            if (!fechaActual) {
+            if (!fechaActual || fechaActual === '' || fechaActual === '0000-00-00') {
                 const manana = new Date();
                 manana.setDate(manana.getDate() + 1);
                 nuevosPedidos[index] = {
@@ -302,7 +308,6 @@ const EditarTablaPedidos: React.FC = () => {
         setPedidos(nuevosPedidos);
     };
 
-    // Guardar cambios - SOLO los modificados
     const handleGuardarCambios = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -335,13 +340,11 @@ const EditarTablaPedidos: React.FC = () => {
             if (data.mensaje) setMensaje(`✅ ${data.mensaje}`);
             if (data.error) setError(`❌ ${data.error}`);
 
-            // Verificar si hay mensajes de WhatsApp
             if (data.mensajesWhatsapp && data.mensajesWhatsapp.length > 0) {
                 setMensajesWhatsapp(data.mensajesWhatsapp);
                 setShowWhatsappList(true);
             }
 
-            // Recargar pedidos para actualizar originales
             await cargarPedidos();
 
             setTimeout(() => {
@@ -356,7 +359,6 @@ const EditarTablaPedidos: React.FC = () => {
         }
     };
 
-    // Limpiar filtros
     const limpiarFiltros = () => {
         setSearch('');
         setSearchSecondary('');
@@ -364,17 +366,17 @@ const EditarTablaPedidos: React.FC = () => {
         setFechaHasta('');
         setRepartidorFiltro('');
         setEstadoFiltro('');
+        setTipoEntregaFiltro('');
         setPaginaActual(1);
     };
 
-    // Exportar a Excel (ACTUALIZADO con fecha programada)
     const exportarExcel = () => {
         const datosExcel: any[][] = [];
 
         datosExcel.push([
             '#', 'Dirección', 'Barrio', 'Teléfono', 'Nombre Cliente',
             'Observación Cliente', 'Observación Pedido', '10kg', '15kg', '45kg',
-            'Precio', 'Estado', 'Tipo Pedido', 'Repartidor', 'Fecha Programada', 'Tipo Entrega'
+            'Precio', 'Estado', 'Tipo Pedido', 'Repartidor', 'Tipo Entrega', 'Fecha Programada'
         ]);
 
         pedidos.forEach((pedido, index) => {
@@ -393,12 +395,11 @@ const EditarTablaPedidos: React.FC = () => {
                 pedido.estado,
                 pedido.tipo_pedido,
                 pedido.repartidor_nombre ? `${pedido.repartidor_nombre} ${pedido.repartidor_apellido}` : 'Sin asignar',
-                pedido.es_programado ? formatearFecha(pedido.fecha_entrega_programada) : 'Inmediato',
-                pedido.es_programado ? 'Programado' : 'Inmediato'
+                pedido.es_programado ? 'Programado' : 'Inmediato',
+                pedido.es_programado ? formatearFecha(pedido.fecha_entrega_programada) : ''
             ]);
         });
 
-        // Agregar fila de totales
         datosExcel.push([
             'TOTALES', '', '', '', '', '', '',
             totalGarrafas10kg, totalGarrafas15kg, totalGarrafas45kg, totalPrecio, '', '', '', '', ''
@@ -410,7 +411,7 @@ const EditarTablaPedidos: React.FC = () => {
             { wch: 5 }, { wch: 30 }, { wch: 15 }, { wch: 15 },
             { wch: 20 }, { wch: 25 }, { wch: 25 }, { wch: 8 },
             { wch: 8 }, { wch: 8 }, { wch: 12 }, { wch: 12 },
-            { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 12 }
+            { wch: 15 }, { wch: 20 }, { wch: 12 }, { wch: 12 }
         ];
         XLSX.utils.book_append_sheet(wb, ws, 'Pedidos');
 
@@ -422,7 +423,6 @@ const EditarTablaPedidos: React.FC = () => {
         setTimeout(() => setMensaje(''), 3000);
     };
 
-    // Imprimir tabla con 35 renglones (ACTUALIZADO con fecha programada)
     const imprimirTabla = () => {
         const ventanaImpresion = window.open('', '_blank');
         if (!ventanaImpresion) return;
@@ -445,8 +445,6 @@ const EditarTablaPedidos: React.FC = () => {
                     .text-center { text-align: center; }
                     .text-right { text-align: right; }
                     .totales { font-weight: bold; background-color: #f0f0f0; }
-                    .fecha-programada { background-color: #FFF3E0; }
-                    .fecha-inmediato { color: #666; font-style: italic; }
                     @media print {
                         body { margin: 0; padding: 10px; }
                         th, td { padding: 4px; }
@@ -469,23 +467,24 @@ const EditarTablaPedidos: React.FC = () => {
                             <th>15kg</th>
                             <th>45kg</th>
                             <th>Precio</th>
-                            <th>E/T</th>
-                            <th>Fecha Prog.</th>
+                            <th>Estado</th>
+                            <th>Tipo Pedido</th>
+                            <th>Repartidor</th>
+                            <th>Tipo Entrega</th>
                             <th>✓</th>
                         </tr>
                     </thead>
                     <tbody>
         `;
 
-        // Mostrar los pedidos existentes
         pedidos.forEach((pedido, idx) => {
             const num = idx + 1 + (paginaActual - 1) * registrosPorPagina;
             const kg10 = pedido.garrafa_10kg || 0;
             const kg15 = pedido.garrafa_15kg || 0;
             const kg45 = pedido.garrafa_45kg || 0;
             const precioNum = Number(pedido.precio) || 0;
-            const fechaProg = pedido.es_programado ? formatearFecha(pedido.fecha_entrega_programada) : 'Inmediato';
-            const estadoEntrega = pedido.es_programado ? '📅' : '⚡';
+            const repartidorNombre = pedido.repartidor_nombre ? `${pedido.repartidor_nombre} ${pedido.repartidor_apellido || ''}` : 'Sin asignar';
+            const tipoEntrega = pedido.es_programado ? 'Programado' : 'Inmediato';
 
             total10kg += kg10;
             total15kg += kg15;
@@ -505,14 +504,15 @@ const EditarTablaPedidos: React.FC = () => {
                     <td class="text-center">${kg15 > 0 ? kg15 : ''}</td>
                     <td class="text-center">${kg45 > 0 ? kg45 : ''}</td>
                     <td class="text-right">${precioNum > 0 ? '$' + precioNum.toFixed(2) : ''}</td>
-                    <td class="text-center">${estadoEntrega}</td>
-                    <td class="text-center ${pedido.es_programado ? 'fecha-programada' : 'fecha-inmediato'}">${fechaProg}</td>
+                    <td>${pedido.estado || ''}</td>
+                    <td>${pedido.tipo_pedido || ''}</td>
+                    <td>${repartidorNombre}</td>
+                    <td class="text-center">${tipoEntrega}</td>
                     <td class="text-center"></td>
                 </tr>
             `;
         });
 
-        // Completar hasta 35 renglones
         for (let i = pedidos.length + 1; i <= TOTAL_RENGLONES_IMPRESION; i++) {
             const num = i + (paginaActual - 1) * registrosPorPagina;
             tablaHtml += `
@@ -528,6 +528,8 @@ const EditarTablaPedidos: React.FC = () => {
                     <td class="text-center"></td>
                     <td class="text-center"></td>
                     <td class="text-right"></td>
+                    <td class="text-center"></td>
+                    <td class="text-center"></td>
                     <td class="text-center"></td>
                     <td class="text-center"></td>
                     <td class="text-center"></td>
@@ -548,6 +550,8 @@ const EditarTablaPedidos: React.FC = () => {
                             <td class="text-center"></td>
                             <td class="text-center"></td>
                             <td class="text-center"></td>
+                            <td class="text-center"></td>
+                            <td class="text-center"></td>
                         </tr>
                     </tfoot>
                 </table>
@@ -563,14 +567,12 @@ const EditarTablaPedidos: React.FC = () => {
         ventanaImpresion.print();
     };
 
-    // Cambiar página
     const cambiarPagina = (pagina: number) => {
         if (pagina >= 1 && pagina <= totalPaginas) {
             setPaginaActual(pagina);
         }
     };
 
-    // Renderizar paginación
     const renderPaginacion = () => {
         const paginas = [];
         let inicio = Math.max(1, paginaActual - 2);
@@ -608,7 +610,6 @@ const EditarTablaPedidos: React.FC = () => {
                 showConfirm={!!modal.onConfirm}
             />
 
-            {/* Modal de lista de WhatsApp */}
             {showWhatsappList && mensajesWhatsapp.length > 0 && (
                 <div className="whatsapp-modal-overlay">
                     <div className="whatsapp-modal-content">
@@ -640,7 +641,6 @@ const EditarTablaPedidos: React.FC = () => {
             {mensaje && <div className="mensaje-exito">{mensaje}</div>}
             {error && <div className="mensaje-error">{error}</div>}
 
-            {/* Filtros */}
             <div className="filters-container">
                 <div className="filter-row">
                     <div className="filter-group">
@@ -695,6 +695,20 @@ const EditarTablaPedidos: React.FC = () => {
                     </div>
 
                     <div className="filter-group">
+                        <label>📅 Tipo de Entrega</label>
+                        <select
+                            value={tipoEntregaFiltro}
+                            onChange={(e) => setTipoEntregaFiltro(e.target.value)}
+                        >
+                            <option value="">Todos</option>
+                            <option value="programado">📅 Solo Programados</option>
+                            <option value="inmediato">⚡ Solo Inmediatos</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div className="filter-row">
+                    <div className="filter-group">
                         <label>📅 Desde:</label>
                         <input
                             type="date"
@@ -723,7 +737,6 @@ const EditarTablaPedidos: React.FC = () => {
                 </div>
             </div>
 
-            {/* Información de paginación */}
             <div className="pagination-info">
                 📄 Mostrando {pedidos.length} de {totalRegistros} registros - Página {paginaActual} de {totalPaginas}
                 {pedidosModificados.length > 0 && (
@@ -733,7 +746,6 @@ const EditarTablaPedidos: React.FC = () => {
                 )}
             </div>
 
-            {/* Tabla editable */}
             <form onSubmit={handleGuardarCambios}>
                 <table className="editable-table">
                     <thead>
@@ -895,7 +907,6 @@ const EditarTablaPedidos: React.FC = () => {
                 </div>
             </form>
 
-            {/* Paginación */}
             {totalPaginas > 1 && (
                 <div className="pagination">
                     <button onClick={() => cambiarPagina(1)} disabled={paginaActual === 1}>

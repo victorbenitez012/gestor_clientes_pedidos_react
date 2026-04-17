@@ -9,7 +9,6 @@ import BotonesAccion from './BotonesAccion';
 import TablaUltimosPedidos from './TablaUltimosPedidos';
 import { useFormateoTexto } from './hooks/useFormateoTexto';
 import { useBuscarCliente } from './hooks/useBuscarCliente';
-import { useGuardarPedido } from './hooks/useGuardarPedido';
 import { Cliente, Repartidor, FormDataPedido, Pedido } from './types';
 
 const AgregarPedido: React.FC = () => {
@@ -26,13 +25,28 @@ const AgregarPedido: React.FC = () => {
         setMostrarSugerenciasTotal,
         setMostrarSugerenciasDireccion
     } = useBuscarCliente();
-    const { loading, modal, setModal, closeModal, realizarSubmit } = useGuardarPedido();
 
     // Estado local
     const [repartidores, setRepartidores] = useState<Repartidor[]>([]);
     const [ultimosPedidos, setUltimosPedidos] = useState<Pedido[]>([]);
     const [clienteId, setClienteId] = useState<number | null>(null);
     const [clienteOriginal, setClienteOriginal] = useState<Cliente | null>(null);
+    const [loading, setLoading] = useState(false);
+
+    // Estado del modal con todas las propiedades requeridas
+    const [modal, setModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        type: 'info' as 'info' | 'success' | 'warning' | 'error',
+        onConfirm: undefined as (() => void) | undefined,
+        onCancel: undefined as (() => void) | undefined,
+        onAlternative: undefined as (() => void) | undefined,
+        showAlternative: false,
+        confirmText: 'Aceptar',
+        cancelText: 'Cancelar',
+        alternativeText: 'Nuevo Cliente'
+    });
 
     // Refs
     const inputTotalRef = useRef<HTMLInputElement>(null);
@@ -84,6 +98,10 @@ const AgregarPedido: React.FC = () => {
             console.error('Error obteniendo pedidos:', error);
             setUltimosPedidos([]);
         }
+    };
+
+    const closeModal = () => {
+        setModal(prev => ({ ...prev, isOpen: false }));
     };
 
     // Verificar si los datos del cliente fueron modificados
@@ -183,6 +201,86 @@ const AgregarPedido: React.FC = () => {
         if (inputDireccionRef.current) inputDireccionRef.current.value = '';
     };
 
+    // Función para enviar el formulario usando FormData
+    const realizarSubmit = async (datosFormulario: FormDataPedido, idCliente: number | null, actualizarCliente: boolean) => {
+        setLoading(true);
+
+        try {
+            const formDataToSend = new FormData();
+
+            // Datos del cliente
+            if (idCliente && actualizarCliente) {
+                formDataToSend.append('cliente_id', idCliente.toString());
+            }
+            formDataToSend.append('nombre_cliente', datosFormulario.nombre_cliente);
+            formDataToSend.append('direccion_cliente', datosFormulario.direccion_cliente);
+            formDataToSend.append('barrio_cliente', datosFormulario.barrio_cliente);
+            formDataToSend.append('telefono_cliente', datosFormulario.telefono_cliente);
+            formDataToSend.append('observacion_cliente', datosFormulario.observacion_cliente);
+
+            // Datos del pedido
+            formDataToSend.append('observacion_pedido', datosFormulario.observacion_pedido);
+            formDataToSend.append('estado', datosFormulario.estado);
+            formDataToSend.append('precio', datosFormulario.precio);
+            formDataToSend.append('repartidor', datosFormulario.repartidor);
+            formDataToSend.append('garrafa_10kg', datosFormulario.garrafa_10kg.toString());
+            formDataToSend.append('garrafa_15kg', datosFormulario.garrafa_15kg.toString());
+            formDataToSend.append('garrafa_45kg', datosFormulario.garrafa_45kg.toString());
+
+            // Campos de fecha programada - CORREGIDO
+            formDataToSend.append('es_programado', datosFormulario.es_programado ? '1' : '0');
+
+            if (datosFormulario.es_programado && datosFormulario.fecha_entrega_programada) {
+                formDataToSend.append('fecha_entrega_programada', datosFormulario.fecha_entrega_programada);
+            }
+
+            const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/pedidos/agregar.php', {
+                method: 'POST',
+                body: formDataToSend
+            });
+
+            const text = await response.text();
+
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                if (text.includes('success')) {
+                    return { success: true, whatsappUrl: null };
+                }
+                throw new Error('Respuesta inválida del servidor');
+            }
+
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            return {
+                success: true,
+                whatsappUrl: data.whatsapp_url || null
+            };
+
+        } catch (error) {
+            console.error('Error al guardar:', error);
+            setModal({
+                isOpen: true,
+                title: 'Error',
+                message: error instanceof Error ? error.message : 'Error al guardar el pedido',
+                type: 'error',
+                onConfirm: closeModal,
+                onCancel: closeModal,
+                onAlternative: undefined,
+                showAlternative: false,
+                confirmText: 'Aceptar',
+                cancelText: 'Cerrar',
+                alternativeText: 'Nuevo Cliente'
+            });
+            return { success: false, whatsappUrl: null };
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const mostrarModalWhatsApp = (urlWhatsapp: string) => {
         setTimeout(() => {
             setModal({
@@ -194,10 +292,12 @@ const AgregarPedido: React.FC = () => {
                     window.open(urlWhatsapp, '_blank');
                     closeModal();
                 },
-                onCancel: () => closeModal(),
+                onCancel: closeModal,
+                onAlternative: undefined,
                 showAlternative: false,
                 confirmText: 'Enviar WhatsApp',
-                cancelText: 'No enviar'
+                cancelText: 'No enviar',
+                alternativeText: 'Nuevo Cliente'
             });
         }, 500);
     };
@@ -213,10 +313,13 @@ const AgregarPedido: React.FC = () => {
                 title: 'Error',
                 message: 'Debes agregar al menos una garrafa.',
                 type: 'error',
-                onConfirm: () => closeModal(),
+                onConfirm: closeModal,
+                onCancel: closeModal,
+                onAlternative: undefined,
                 showAlternative: false,
                 confirmText: 'Aceptar',
-                cancelText: 'Cerrar'
+                cancelText: 'Cerrar',
+                alternativeText: 'Nuevo Cliente'
             });
             return;
         }
@@ -227,10 +330,13 @@ const AgregarPedido: React.FC = () => {
                 title: 'Error',
                 message: 'Por favor completa todos los campos obligatorios.',
                 type: 'error',
-                onConfirm: () => closeModal(),
+                onConfirm: closeModal,
+                onCancel: closeModal,
+                onAlternative: undefined,
                 showAlternative: false,
                 confirmText: 'Aceptar',
-                cancelText: 'Cerrar'
+                cancelText: 'Cerrar',
+                alternativeText: 'Nuevo Cliente'
             });
             return;
         }
@@ -242,10 +348,13 @@ const AgregarPedido: React.FC = () => {
                 title: 'Error',
                 message: 'Por favor selecciona una fecha para la entrega programada.',
                 type: 'error',
-                onConfirm: () => closeModal(),
+                onConfirm: closeModal,
+                onCancel: closeModal,
+                onAlternative: undefined,
                 showAlternative: false,
                 confirmText: 'Aceptar',
-                cancelText: 'Cerrar'
+                cancelText: 'Cerrar',
+                alternativeText: 'Nuevo Cliente'
             });
             return;
         }
@@ -265,7 +374,7 @@ const AgregarPedido: React.FC = () => {
                         limpiarFormulario();
                     }
                 },
-                onCancel: () => closeModal(),
+                onCancel: closeModal,
                 onAlternative: async () => {
                     closeModal();
                     setClienteId(null);
@@ -279,9 +388,9 @@ const AgregarPedido: React.FC = () => {
                     }, 100);
                 },
                 showAlternative: true,
-                alternativeText: 'Nuevo Cliente',
                 confirmText: 'Actualizar Cliente',
-                cancelText: 'Cancelar'
+                cancelText: 'Cancelar',
+                alternativeText: 'Nuevo Cliente'
             });
             return;
         }
@@ -302,6 +411,8 @@ const AgregarPedido: React.FC = () => {
                     obtenerUltimosPedidos(nuevoClienteId);
                 }
             }
+        } else if (result.success) {
+            limpiarFormulario();
         }
     };
 
@@ -322,11 +433,11 @@ const AgregarPedido: React.FC = () => {
                 title={modal.title}
                 message={modal.message}
                 type={modal.type}
-                confirmText={modal.confirmText || 'Aceptar'}
-                cancelText={modal.cancelText || 'Cancelar'}
-                alternativeText={modal.alternativeText || 'Nuevo Cliente'}
+                confirmText={modal.confirmText}
+                cancelText={modal.cancelText}
+                alternativeText={modal.alternativeText}
                 showConfirm={!!modal.onConfirm}
-                showAlternative={modal.showAlternative || false}
+                showAlternative={modal.showAlternative}
             />
 
             <form onSubmit={handleSubmit} className="formulario-pedido">
