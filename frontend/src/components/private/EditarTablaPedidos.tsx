@@ -20,6 +20,9 @@ interface Pedido {
     cliente_observacion: string;
     repartidor_nombre?: string;
     repartidor_apellido?: string;
+    // NUEVOS CAMPOS
+    fecha_entrega_programada?: string | null;
+    es_programado?: number;
 }
 
 interface Repartidor {
@@ -113,6 +116,26 @@ const EditarTablaPedidos: React.FC = () => {
         };
     };
 
+    // Formatear fecha para mostrar
+    const formatearFecha = (fecha: string | null | undefined): string => {
+        if (!fecha) return 'Inmediato';
+        const [year, month, day] = fecha.split('-');
+        return `${day}/${month}/${year}`;
+    };
+
+    // Obtener clase CSS para fecha programada
+    const getFechaClass = (fecha: string | null | undefined, esProgramado: number | undefined): string => {
+        if (!esProgramado || !fecha) return 'fecha-inmediato';
+
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        const fechaEntrega = new Date(fecha);
+
+        if (fechaEntrega < hoy) return 'fecha-vencida';
+        if (fechaEntrega.getTime() === hoy.getTime()) return 'fecha-hoy';
+        return 'fecha-futuro';
+    };
+
     // Cargar repartidores
     useEffect(() => {
         const fetchRepartidores = async () => {
@@ -129,7 +152,7 @@ const EditarTablaPedidos: React.FC = () => {
         fetchRepartidores();
     }, []);
 
-    // Comparar si un pedido ha cambiado
+    // Comparar si un pedido ha cambiado (ACTUALIZADO con fecha)
     const haCambiado = (original: Pedido, actual: Pedido): boolean => {
         return original.tipo_pedido !== actual.tipo_pedido ||
             original.garrafa_10kg !== actual.garrafa_10kg ||
@@ -138,7 +161,9 @@ const EditarTablaPedidos: React.FC = () => {
             original.estado !== actual.estado ||
             Number(original.precio) !== Number(actual.precio) ||
             original.observacion_pedido !== actual.observacion_pedido ||
-            original.repartidor_id !== actual.repartidor_id;
+            original.repartidor_id !== actual.repartidor_id ||
+            original.fecha_entrega_programada !== actual.fecha_entrega_programada ||
+            original.es_programado !== actual.es_programado;
     };
 
     // Obtener solo los pedidos modificados
@@ -236,6 +261,47 @@ const EditarTablaPedidos: React.FC = () => {
         setPedidos(nuevosPedidos);
     };
 
+    // Manejar cambio de fecha programada
+    const handleFechaProgramadaChange = (index: number, value: string) => {
+        const nuevosPedidos = [...pedidos];
+        nuevosPedidos[index] = {
+            ...nuevosPedidos[index],
+            fecha_entrega_programada: value || null,
+            es_programado: value ? 1 : 0
+        };
+        setPedidos(nuevosPedidos);
+    };
+
+    // Manejar toggle de checkbox programado
+    const handleProgramadoToggle = (index: number, checked: boolean) => {
+        const nuevosPedidos = [...pedidos];
+        if (!checked) {
+            nuevosPedidos[index] = {
+                ...nuevosPedidos[index],
+                es_programado: 0,
+                fecha_entrega_programada: null
+            };
+        } else {
+            // Si activa programado y no tiene fecha, sugerir fecha por defecto (mañana)
+            const fechaActual = nuevosPedidos[index].fecha_entrega_programada;
+            if (!fechaActual) {
+                const manana = new Date();
+                manana.setDate(manana.getDate() + 1);
+                nuevosPedidos[index] = {
+                    ...nuevosPedidos[index],
+                    es_programado: 1,
+                    fecha_entrega_programada: manana.toISOString().split('T')[0]
+                };
+            } else {
+                nuevosPedidos[index] = {
+                    ...nuevosPedidos[index],
+                    es_programado: 1
+                };
+            }
+        }
+        setPedidos(nuevosPedidos);
+    };
+
     // Guardar cambios - SOLO los modificados
     const handleGuardarCambios = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -301,14 +367,14 @@ const EditarTablaPedidos: React.FC = () => {
         setPaginaActual(1);
     };
 
-    // Exportar a Excel
+    // Exportar a Excel (ACTUALIZADO con fecha programada)
     const exportarExcel = () => {
         const datosExcel: any[][] = [];
 
         datosExcel.push([
             '#', 'Dirección', 'Barrio', 'Teléfono', 'Nombre Cliente',
             'Observación Cliente', 'Observación Pedido', '10kg', '15kg', '45kg',
-            'Precio', 'Estado', 'Tipo Pedido', 'Repartidor'
+            'Precio', 'Estado', 'Tipo Pedido', 'Repartidor', 'Fecha Programada', 'Tipo Entrega'
         ]);
 
         pedidos.forEach((pedido, index) => {
@@ -326,14 +392,16 @@ const EditarTablaPedidos: React.FC = () => {
                 pedido.precio || 0,
                 pedido.estado,
                 pedido.tipo_pedido,
-                pedido.repartidor_nombre ? `${pedido.repartidor_nombre} ${pedido.repartidor_apellido}` : 'Sin asignar'
+                pedido.repartidor_nombre ? `${pedido.repartidor_nombre} ${pedido.repartidor_apellido}` : 'Sin asignar',
+                pedido.es_programado ? formatearFecha(pedido.fecha_entrega_programada) : 'Inmediato',
+                pedido.es_programado ? 'Programado' : 'Inmediato'
             ]);
         });
 
         // Agregar fila de totales
         datosExcel.push([
             'TOTALES', '', '', '', '', '', '',
-            totalGarrafas10kg, totalGarrafas15kg, totalGarrafas45kg, totalPrecio, '', '', ''
+            totalGarrafas10kg, totalGarrafas15kg, totalGarrafas45kg, totalPrecio, '', '', '', '', ''
         ]);
 
         const wb = XLSX.utils.book_new();
@@ -341,7 +409,8 @@ const EditarTablaPedidos: React.FC = () => {
         ws['!cols'] = [
             { wch: 5 }, { wch: 30 }, { wch: 15 }, { wch: 15 },
             { wch: 20 }, { wch: 25 }, { wch: 25 }, { wch: 8 },
-            { wch: 8 }, { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 15 }, { wch: 20 }
+            { wch: 8 }, { wch: 8 }, { wch: 12 }, { wch: 12 },
+            { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 12 }
         ];
         XLSX.utils.book_append_sheet(wb, ws, 'Pedidos');
 
@@ -353,7 +422,7 @@ const EditarTablaPedidos: React.FC = () => {
         setTimeout(() => setMensaje(''), 3000);
     };
 
-    // Imprimir tabla con 35 renglones (líneas completamente vacías)
+    // Imprimir tabla con 35 renglones (ACTUALIZADO con fecha programada)
     const imprimirTabla = () => {
         const ventanaImpresion = window.open('', '_blank');
         if (!ventanaImpresion) return;
@@ -370,12 +439,14 @@ const EditarTablaPedidos: React.FC = () => {
                     * { font-family: Arial, sans-serif; }
                     body { margin: 20px; padding: 0; }
                     h1 { text-align: center; margin-bottom: 20px; color: #4b0082; }
-                    table { border-collapse: collapse; width: 100%; margin-bottom: 20px; font-size: 12px; }
-                    th, td { border: 1px solid #000; padding: 6px; text-align: left; vertical-align: top; }
+                    table { border-collapse: collapse; width: 100%; margin-bottom: 20px; font-size: 11px; }
+                    th, td { border: 1px solid #000; padding: 5px; text-align: left; vertical-align: top; }
                     th { background-color: #f2f2f2; font-weight: bold; text-align: center; }
                     .text-center { text-align: center; }
                     .text-right { text-align: right; }
                     .totales { font-weight: bold; background-color: #f0f0f0; }
+                    .fecha-programada { background-color: #FFF3E0; }
+                    .fecha-inmediato { color: #666; font-style: italic; }
                     @media print {
                         body { margin: 0; padding: 10px; }
                         th, td { padding: 4px; }
@@ -399,6 +470,7 @@ const EditarTablaPedidos: React.FC = () => {
                             <th>45kg</th>
                             <th>Precio</th>
                             <th>E/T</th>
+                            <th>Fecha Prog.</th>
                             <th>✓</th>
                         </tr>
                     </thead>
@@ -412,6 +484,8 @@ const EditarTablaPedidos: React.FC = () => {
             const kg15 = pedido.garrafa_15kg || 0;
             const kg45 = pedido.garrafa_45kg || 0;
             const precioNum = Number(pedido.precio) || 0;
+            const fechaProg = pedido.es_programado ? formatearFecha(pedido.fecha_entrega_programada) : 'Inmediato';
+            const estadoEntrega = pedido.es_programado ? '📅' : '⚡';
 
             total10kg += kg10;
             total15kg += kg15;
@@ -431,13 +505,14 @@ const EditarTablaPedidos: React.FC = () => {
                     <td class="text-center">${kg15 > 0 ? kg15 : ''}</td>
                     <td class="text-center">${kg45 > 0 ? kg45 : ''}</td>
                     <td class="text-right">${precioNum > 0 ? '$' + precioNum.toFixed(2) : ''}</td>
-                    <td class="text-center"></td>
+                    <td class="text-center">${estadoEntrega}</td>
+                    <td class="text-center ${pedido.es_programado ? 'fecha-programada' : 'fecha-inmediato'}">${fechaProg}</td>
                     <td class="text-center"></td>
                 </tr>
             `;
         });
 
-        // Completar hasta 35 renglones con filas COMPLETAMENTE VACÍAS
+        // Completar hasta 35 renglones
         for (let i = pedidos.length + 1; i <= TOTAL_RENGLONES_IMPRESION; i++) {
             const num = i + (paginaActual - 1) * registrosPorPagina;
             tablaHtml += `
@@ -455,6 +530,7 @@ const EditarTablaPedidos: React.FC = () => {
                     <td class="text-right"></td>
                     <td class="text-center"></td>
                     <td class="text-center"></td>
+                    <td class="text-center"></td>
                 </tr>
             `;
         }
@@ -463,11 +539,13 @@ const EditarTablaPedidos: React.FC = () => {
                     </tbody>
                     <tfoot>
                         <tr class="totales">
-                            <td colspan="7" class="text-right"><strong>TOTALES:</strong></td>
+                            <td colspan="6" class="text-right"><strong>TOTALES:</strong></td>
+                            <td class="text-center"></td>
                             <td class="text-center"><strong>${total10kg > 0 ? total10kg : ''}</strong></td>
                             <td class="text-center"><strong>${total15kg > 0 ? total15kg : ''}</strong></td>
                             <td class="text-center"><strong>${total45kg > 0 ? total45kg : ''}</strong></td>
                             <td class="text-right"><strong>${totalPrecioImpresion > 0 ? '$' + totalPrecioImpresion.toFixed(2) : ''}</strong></td>
+                            <td class="text-center"></td>
                             <td class="text-center"></td>
                             <td class="text-center"></td>
                         </tr>
@@ -674,14 +752,15 @@ const EditarTablaPedidos: React.FC = () => {
                             <th>Precio</th>
                             <th>Observación Pedido</th>
                             <th>Fecha Creación</th>
+                            <th>📅 Fecha Programada</th>
                             <th>Repartidor</th>
                         </tr>
                     </thead>
                     <tbody>
                         {loading ? (
-                            <tr><td colSpan={15} className="text-center">🔄 Cargando pedidos...</td></tr>
+                            <tr><td colSpan={16} className="text-center">🔄 Cargando pedidos...</td></tr>
                         ) : pedidos.length === 0 ? (
-                            <tr><td colSpan={15} className="text-center">📭 No se encontraron pedidos</td></tr>
+                            <tr><td colSpan={16} className="text-center">📭 No se encontraron pedidos</td></tr>
                         ) : (
                             pedidos.map((pedido, index) => (
                                 <tr key={pedido.id} className={haCambiado(pedidosOriginales[index], pedido) ? 'modificado' : ''}>
@@ -754,6 +833,30 @@ const EditarTablaPedidos: React.FC = () => {
                                     </td>
                                     <td>{pedido.fecha_creacion}</td>
                                     <td>
+                                        <div className="fecha-programada-cell">
+                                            <label className="checkbox-label">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={pedido.es_programado === 1}
+                                                    onChange={(e) => handleProgramadoToggle(index, e.target.checked)}
+                                                />
+                                                <span>📅 Programar</span>
+                                            </label>
+                                            {pedido.es_programado === 1 && (
+                                                <input
+                                                    type="date"
+                                                    value={pedido.fecha_entrega_programada || ''}
+                                                    onChange={(e) => handleFechaProgramadaChange(index, e.target.value)}
+                                                    className="fecha-input"
+                                                    min={new Date().toISOString().split('T')[0]}
+                                                />
+                                            )}
+                                            {!pedido.es_programado && (
+                                                <span className="fecha-inmediato-badge">⚡ Inmediato</span>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td>
                                         <select
                                             value={pedido.repartidor_id || ''}
                                             onChange={(e) => handlePedidoChange(index, 'repartidor_id', e.target.value ? parseInt(e.target.value) : null, false)}
@@ -770,7 +873,7 @@ const EditarTablaPedidos: React.FC = () => {
                     </tbody>
                     <tfoot>
                         <tr>
-                            <td colSpan={10} className="text-right"><strong>💰 Total Precio:</strong></td>
+                            <td colSpan={11} className="text-right"><strong>💰 Total Precio:</strong></td>
                             <td colSpan={5}><strong>${totalPrecio.toFixed(2)}</strong></td>
                         </tr>
                         <tr style={{ backgroundColor: '#e8f4f8' }}>
@@ -778,7 +881,7 @@ const EditarTablaPedidos: React.FC = () => {
                             <td><strong>{totalGarrafas10kg}</strong> <small>(10kg)</small></td>
                             <td><strong>{totalGarrafas15kg}</strong> <small>(15kg)</small></td>
                             <td><strong>{totalGarrafas45kg}</strong> <small>(45kg)</small></td>
-                            <td colSpan={10}></td>
+                            <td colSpan={11}></td>
                         </tr>
                     </tfoot>
                 </table>

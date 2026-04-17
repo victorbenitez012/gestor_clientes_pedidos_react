@@ -1264,3 +1264,106 @@ p {
     margin-bottom: 30px;
     font-size: 1rem;
 }
+/* Estilos para fecha programada en la tabla */
+.fecha-programada-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 120px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.checkbox-label input {
+    width: auto;
+    margin: 0;
+}
+
+.fecha-input {
+    padding: 4px 8px;
+    font-size: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.fecha-inmediato-badge {
+    background-color: #e0e0e0;
+    color: #666;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    text-align: center;
+    display: inline-block;
+}
+
+/* Estilos para filas modificadas */
+tr.modificado {
+    background-color: #fff3e0 !important;
+}
+
+tr.modificado input, 
+tr.modificado select {
+    border-color: #ff9800;
+    background-color: #fff8e1;
+}
+
+/* WhatsApp modal */
+.whatsapp-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.whatsapp-modal-content {
+    background-color: white;
+    padding: 25px;
+    border-radius: 12px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.whatsapp-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.whatsapp-btn {
+    background-color: #25D366;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.whatsapp-btn:hover {
+    background-color: #128C7E;
+}
+
+.close-whatsapp-btn {
+    background-color: #6c757d;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 100%;
+}
