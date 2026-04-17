@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $fecha_hasta = isset($_GET['fecha_hasta']) ? trim($_GET['fecha_hasta']) : '';
     $repartidor_filtro = isset($_GET['repartidor_filtro']) ? $_GET['repartidor_filtro'] : '';
     $estado_filtro = isset($_GET['estado_filtro']) ? $_GET['estado_filtro'] : '';
-    $tipo_entrega_filtro = isset($_GET['tipo_entrega_filtro']) ? $_GET['tipo_entrega_filtro'] : ''; // NUEVO
+    $tipo_entrega_filtro = isset($_GET['tipo_entrega_filtro']) ? $_GET['tipo_entrega_filtro'] : '';
     $pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
     $registros_por_pagina = isset($_GET['registros_por_pagina']) ? (int)$_GET['registros_por_pagina'] : 50;
     $offset = ($pagina - 1) * $registros_por_pagina;
@@ -107,7 +107,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $types .= 's';
     }
 
-    // NUEVO FILTRO POR TIPO DE ENTREGA
     if ($tipo_entrega_filtro === 'programado') {
         $whereConditions[] = "pedidos.es_programado = 1";
     } elseif ($tipo_entrega_filtro === 'inmediato') {
@@ -191,7 +190,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $fila['garrafa_15kg'] = isset($fila['garrafa_15kg']) ? (int)$fila['garrafa_15kg'] : 0;
             $fila['garrafa_45kg'] = isset($fila['garrafa_45kg']) ? (int)$fila['garrafa_45kg'] : 0;
             $fila['precio'] = isset($fila['precio']) ? (float)$fila['precio'] : 0;
-            $fila['fecha_entrega_programada'] = isset($fila['fecha_entrega_programada']) ? $fila['fecha_entrega_programada'] : null;
+            // Normalizar fecha: si es 0000-00-00, enviar null
+            $fila['fecha_entrega_programada'] = (isset($fila['fecha_entrega_programada']) && $fila['fecha_entrega_programada'] !== '0000-00-00') ? $fila['fecha_entrega_programada'] : null;
             $fila['es_programado'] = isset($fila['es_programado']) ? (int)$fila['es_programado'] : 0;
             $pedidos[] = $fila;
         }
@@ -253,17 +253,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $observacion_pedido = isset($pedido['observacion_pedido']) ? $pedido['observacion_pedido'] : '';
         $repartidor_id = isset($pedido['repartidor_id']) && !empty($pedido['repartidor_id']) ? (int)$pedido['repartidor_id'] : null;
         
-        // ============ VALIDACIÓN DE FECHA PROGRAMADA ============
-        $fecha_entrega_programada = isset($pedido['fecha_entrega_programada']) && !empty($pedido['fecha_entrega_programada']) 
-            ? $pedido['fecha_entrega_programada'] 
-            : null;
+        // ============ VALIDACIÓN DE FECHA PROGRAMADA - COPIADA DE agregar.php ============
         $es_programado = isset($pedido['es_programado']) ? (int)$pedido['es_programado'] : 0;
+        $fecha_entrega_programada = null;
         
-        if ($es_programado == 1 && (empty($fecha_entrega_programada) || $fecha_entrega_programada == '0000-00-00')) {
-            $fecha_entrega_programada = date('Y-m-d', strtotime('+1 day'));
+        // IMPORTANTE: Verificar si la fecha viene como string 'null' o null
+        $fecha_recibida = isset($pedido['fecha_entrega_programada']) ? $pedido['fecha_entrega_programada'] : null;
+        
+        // Si la fecha es 'null' (string) o null, tratarla como null
+        if ($fecha_recibida === 'null' || $fecha_recibida === null || $fecha_recibida === '') {
+            $fecha_recibida = null;
         }
         
-        if ($es_programado != 1) {
+        // Si está programado, asignar fecha
+        if ($es_programado == 1) {
+            if (!empty($fecha_recibida) && $fecha_recibida !== '0000-00-00') {
+                $fecha_entrega_programada = $fecha_recibida;
+            } else {
+                // Fecha por defecto: mañana
+                $fecha_entrega_programada = date('Y-m-d', strtotime('+1 day'));
+            }
+        } else {
+            // Si no está programado, la fecha debe ser NULL
             $fecha_entrega_programada = null;
         }
         
@@ -295,6 +306,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmtInfo->close();
         }
         
+        // ============ CONSULTA UPDATE CORREGIDA ============
+        // Usar la misma lógica que funciona en agregar.php
         $queryUpdate = "
             UPDATE pedidos 
             SET tipo_pedido = ?,
@@ -305,14 +318,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 garrafa_10kg = ?, 
                 garrafa_15kg = ?, 
                 garrafa_45kg = ?,
-                fecha_entrega_programada = ?,
-                es_programado = ?
+                es_programado = ?,
+                fecha_entrega_programada = ?
             WHERE id = ?
         ";
         
         $stmt = $conexion->prepare($queryUpdate);
         
         if ($stmt) {
+            // IMPORTANTE: Pasar la fecha como string o null directamente
+            // MySQL acepta NULL en bind_param con tipo 's'
             $stmt->bind_param("ssdsiiiiisi", 
                 $tipo_pedido,
                 $estado, 
@@ -322,42 +337,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $garrafa_10kg, 
                 $garrafa_15kg, 
                 $garrafa_45kg,
-                $fecha_entrega_programada,
                 $es_programado,
+                $fecha_entrega_programada,
                 $id
             );
             
             if ($stmt->execute()) {
                 $actualizados++;
                 
+                // ============ MENSAJE DE WHATSAPP ============
                 if ($tieneGarrafas && $infoPedido && !empty($infoPedido['repartidor_telefono'])) {
                     $detalleGarrafas = [];
-                    if ($garrafa_10kg > 0) $detalleGarrafas[] = "10kg: $garrafa_10kg";
-                    if ($garrafa_15kg > 0) $detalleGarrafas[] = "15kg: $garrafa_15kg";
-                    if ($garrafa_45kg > 0) $detalleGarrafas[] = "45kg: $garrafa_45kg";
+                    if ($garrafa_10kg > 0) $detalleGarrafas[] = "{$garrafa_10kg} x 10kg";
+                    if ($garrafa_15kg > 0) $detalleGarrafas[] = "{$garrafa_15kg} x 15kg";
+                    if ($garrafa_45kg > 0) $detalleGarrafas[] = "{$garrafa_45kg} x 45kg";
                     
-                    $infoFecha = "";
+                    $detalleGarrafasTexto = !empty($detalleGarrafas) ? implode(', ', $detalleGarrafas) : 'Sin garrafas';
+                    $precioFormateado = number_format($precio, 2, ',', '.');
+                    
+                    $mensajeWhatsApp = "*🛵 Tienes un nuevo pedido:* 🛵\n\n";
+                    $mensajeWhatsApp .= "*Tipo de Pedido:* *{$detalleGarrafasTexto}*\n";
+                    $mensajeWhatsApp .= "*Dirección:* *{$infoPedido['direccion']}*\n";
+                    $mensajeWhatsApp .= "*Barrio:* *{$infoPedido['barrio']}*\n";
+                    $mensajeWhatsApp .= "*Nombre del Cliente:* *{$infoPedido['cliente_nombre']}*\n";
+                    
+                    // Limpiar teléfono
+                    $telefonoLimpio = preg_replace('/[^0-9]/', '', $infoPedido['cliente_telefono']);
+                    if (strlen($telefonoLimpio) === 10) {
+                        $telefonoLimpio = '54' . $telefonoLimpio;
+                    }
+                    $mensajeWhatsApp .= "*Teléfono del Cliente:* *+{$telefonoLimpio}*\n";
+                    $mensajeWhatsApp .= "*Observaciones del Cliente:* *" . ($infoPedido['cliente_observacion'] ?: 'Ninguna') . "*\n";
+                    $mensajeWhatsApp .= "*Observaciones del Pedido:* *" . ($observacion_pedido ?: 'Ninguna') . "*\n";
+                    $mensajeWhatsApp .= "*Estado:* *{$estado}*\n";
+                    $mensajeWhatsApp .= "*Precio:* *\${$precioFormateado}*\n";
+                    
                     if ($es_programado == 1 && $fecha_entrega_programada) {
                         $fechaFormateada = date('d/m/Y', strtotime($fecha_entrega_programada));
-                        $infoFecha = "\n📅 *Entrega Programada:* $fechaFormateada";
+                        $mensajeWhatsApp .= "*Entrega Programada:* *{$fechaFormateada}*\n";
                     }
                     
-                    $mensajeWhatsApp = "*🛵 PEDIDO MODIFICADO* 🛵\n\n";
-                    $mensajeWhatsApp .= "*👤 Cliente:* " . ($infoPedido['cliente_nombre'] ?? 'N/A') . "\n";
-                    $mensajeWhatsApp .= "*📍 Dirección:* " . ($infoPedido['direccion'] ?? 'N/A') . "\n";
-                    $mensajeWhatsApp .= "*🏘️ Barrio:* " . ($infoPedido['barrio'] ?? 'N/A') . "\n";
-                    $mensajeWhatsApp .= "*📞 Teléfono:* " . ($infoPedido['cliente_telefono'] ?? 'N/A') . "\n";
-                    $mensajeWhatsApp .= "*📦 Garrafas:* " . implode(', ', $detalleGarrafas) . "\n";
-                    $mensajeWhatsApp .= "*💰 Precio:* $" . number_format($precio, 2) . "\n";
-                    $mensajeWhatsApp .= "*📝 Observación Pedido:* " . ($observacion_pedido ?: 'Ninguna') . "\n";
-                    $mensajeWhatsApp .= "*📋 Estado:* $estado\n";
-                    $mensajeWhatsApp .= $infoFecha;
-                    
-                    if (!empty($infoPedido['cliente_observacion'])) {
-                        $mensajeWhatsApp .= "\n*📌 Observación Cliente:* " . $infoPedido['cliente_observacion'];
-                    }
-                    
-                    $mensajeWhatsApp .= "\n\n---\n📱 Enviado desde Sistema de Gestión";
+                    $mensajeWhatsApp .= "\n---\n📱 Enviado desde Sistema de Gestión";
                     
                     $telefonoRepartidor = preg_replace('/[^0-9]/', '', $infoPedido['repartidor_telefono']);
                     if (strlen($telefonoRepartidor) === 10) {
@@ -372,7 +392,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $stmt->close();
         } else {
-            $errores[] = "Error preparando consulta para ID $id";
+            $errores[] = "Error preparando consulta para ID $id: " . $conexion->error;
         }
     }
     

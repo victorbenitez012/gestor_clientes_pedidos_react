@@ -50,7 +50,7 @@ const EditarTablaPedidos: React.FC = () => {
     const [fechaHasta, setFechaHasta] = useState('');
     const [repartidorFiltro, setRepartidorFiltro] = useState('');
     const [estadoFiltro, setEstadoFiltro] = useState('');
-    const [tipoEntregaFiltro, setTipoEntregaFiltro] = useState(''); // NUEVO FILTRO
+    const [tipoEntregaFiltro, setTipoEntregaFiltro] = useState('');
     const [paginaActual, setPaginaActual] = useState(1);
     const [totalPaginas, setTotalPaginas] = useState(1);
     const [totalRegistros, setTotalRegistros] = useState(0);
@@ -80,8 +80,6 @@ const EditarTablaPedidos: React.FC = () => {
         setModal({ ...modal, isOpen: false });
     };
 
-    // ============ FUNCIONES DE FORMATEO ============
-
     const capitalizarPalabras = (texto: string): string => {
         if (!texto) return '';
         return texto
@@ -105,16 +103,16 @@ const EditarTablaPedidos: React.FC = () => {
         return {
             ...pedido,
             tipo_pedido: capitalizarPalabras(pedido.tipo_pedido),
-            observacion_pedido: capitalizarPrimeraLetra(pedido.observacion_pedido),
+            observacion_pedido: capitalizarPrimeraLetra(pedido.observacion_pedido || ''),
             cliente_nombre: capitalizarPalabras(pedido.cliente_nombre),
             direccion: capitalizarPalabras(pedido.direccion),
             barrio: capitalizarPalabras(pedido.barrio),
-            cliente_observacion: capitalizarPrimeraLetra(pedido.cliente_observacion)
+            cliente_observacion: capitalizarPrimeraLetra(pedido.cliente_observacion || '')
         };
     };
 
     const formatearFecha = (fecha: string | null | undefined): string => {
-        if (!fecha) return 'Inmediato';
+        if (!fecha || fecha === '0000-00-00') return 'Inmediato';
         const [year, month, day] = fecha.split('-');
         return `${day}/${month}/${year}`;
     };
@@ -135,8 +133,11 @@ const EditarTablaPedidos: React.FC = () => {
         fetchRepartidores();
     }, []);
 
-    // Comparar si un pedido ha cambiado
     const haCambiado = (original: Pedido, actual: Pedido): boolean => {
+        // Normalizar fechas para comparación
+        const fechaOriginal = original.fecha_entrega_programada === '0000-00-00' ? null : original.fecha_entrega_programada;
+        const fechaActual = actual.fecha_entrega_programada === '0000-00-00' ? null : actual.fecha_entrega_programada;
+
         return original.tipo_pedido !== actual.tipo_pedido ||
             original.garrafa_10kg !== actual.garrafa_10kg ||
             original.garrafa_15kg !== actual.garrafa_15kg ||
@@ -145,28 +146,37 @@ const EditarTablaPedidos: React.FC = () => {
             Number(original.precio) !== Number(actual.precio) ||
             original.observacion_pedido !== actual.observacion_pedido ||
             original.repartidor_id !== actual.repartidor_id ||
-            original.fecha_entrega_programada !== actual.fecha_entrega_programada ||
-            original.es_programado !== actual.es_programado;
+            fechaOriginal !== fechaActual ||
+            (original.es_programado || 0) !== (actual.es_programado || 0);
     };
 
-    // Obtener solo los pedidos modificados con datos limpios para el backend
     const obtenerPedidosModificados = (): any[] => {
         return pedidos.filter((pedido, index) => {
             const original = pedidosOriginales[index];
             return original && haCambiado(original, pedido);
         }).map(pedido => {
-            let fechaProgramada = pedido.fecha_entrega_programada;
+            // IMPORTANTE: Usar la misma lógica que funciona en agregar_pedido.php
             let esProgramado = pedido.es_programado || 0;
+            let fechaProgramada = null;
 
-            if (esProgramado === 1) {
-                if (!fechaProgramada || fechaProgramada === '' || fechaProgramada === '0000-00-00') {
+            // Si el checkbox está marcado O hay una fecha válida
+            const tieneFechaValida = pedido.fecha_entrega_programada &&
+                pedido.fecha_entrega_programada !== '' &&
+                pedido.fecha_entrega_programada !== '0000-00-00';
+
+            if (esProgramado === 1 || tieneFechaValida) {
+                esProgramado = 1;
+                if (tieneFechaValida) {
+                    fechaProgramada = pedido.fecha_entrega_programada;
+                } else {
+                    // Fecha por defecto: mañana
                     const manana = new Date();
                     manana.setDate(manana.getDate() + 1);
                     fechaProgramada = manana.toISOString().split('T')[0];
                 }
-            } else {
-                fechaProgramada = null;
             }
+
+            console.log(`Pedido ${pedido.id}: esProgramado=${esProgramado}, fecha=${fechaProgramada}`);
 
             return {
                 id: pedido.id,
@@ -178,13 +188,12 @@ const EditarTablaPedidos: React.FC = () => {
                 precio: pedido.precio,
                 observacion_pedido: pedido.observacion_pedido || '',
                 repartidor_id: pedido.repartidor_id || null,
-                fecha_entrega_programada: fechaProgramada,
-                es_programado: esProgramado
+                es_programado: esProgramado,
+                fecha_entrega_programada: fechaProgramada
             };
         });
     };
 
-    // Cargar pedidos
     const cargarPedidos = async () => {
         setLoading(true);
         setError('');
@@ -196,7 +205,7 @@ const EditarTablaPedidos: React.FC = () => {
             if (fechaHasta) params.append('fecha_hasta', fechaHasta);
             if (repartidorFiltro) params.append('repartidor_filtro', repartidorFiltro);
             if (estadoFiltro) params.append('estado_filtro', estadoFiltro);
-            if (tipoEntregaFiltro) params.append('tipo_entrega_filtro', tipoEntregaFiltro); // NUEVO
+            if (tipoEntregaFiltro) params.append('tipo_entrega_filtro', tipoEntregaFiltro);
             params.append('pagina', paginaActual.toString());
             params.append('registros_por_pagina', registrosPorPagina.toString());
 
@@ -230,7 +239,14 @@ const EditarTablaPedidos: React.FC = () => {
                 return;
             }
 
-            const pedidosFormateados = pedidosData.map(pedido => formatearPedido(pedido));
+            // Normalizar fechas al cargar
+            const pedidosNormalizados = pedidosData.map(pedido => ({
+                ...pedido,
+                fecha_entrega_programada: pedido.fecha_entrega_programada === '0000-00-00' ? null : pedido.fecha_entrega_programada,
+                es_programado: pedido.es_programado || 0
+            }));
+
+            const pedidosFormateados = pedidosNormalizados.map(pedido => formatearPedido(pedido));
 
             setPedidos(pedidosFormateados);
             setPedidosOriginales(JSON.parse(JSON.stringify(pedidosFormateados)));
@@ -270,16 +286,26 @@ const EditarTablaPedidos: React.FC = () => {
         setPedidos(nuevosPedidos);
     };
 
+    // ============ FUNCIÓN CORREGIDA PARA CAMBIAR FECHA PROGRAMADA ============
     const handleFechaProgramadaChange = (index: number, value: string) => {
         const nuevosPedidos = [...pedidos];
-        nuevosPedidos[index] = {
-            ...nuevosPedidos[index],
-            fecha_entrega_programada: value || null,
-            es_programado: value ? 1 : 0
-        };
+        if (value && value !== '') {
+            nuevosPedidos[index] = {
+                ...nuevosPedidos[index],
+                fecha_entrega_programada: value,
+                es_programado: 1
+            };
+        } else {
+            nuevosPedidos[index] = {
+                ...nuevosPedidos[index],
+                fecha_entrega_programada: null,
+                es_programado: 0
+            };
+        }
         setPedidos(nuevosPedidos);
     };
 
+    // ============ FUNCIÓN CORREGIDA PARA TOGGLE PROGRAMADO ============
     const handleProgramadoToggle = (index: number, checked: boolean) => {
         const nuevosPedidos = [...pedidos];
         if (!checked) {
@@ -324,6 +350,8 @@ const EditarTablaPedidos: React.FC = () => {
         setMensaje('');
 
         try {
+            console.log('Enviando pedidos modificados:', pedidosModificados); // Debug
+
             const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/pedidos/editar_tabla.php', {
                 method: 'POST',
                 headers: {
@@ -423,6 +451,7 @@ const EditarTablaPedidos: React.FC = () => {
         setTimeout(() => setMensaje(''), 3000);
     };
 
+    // ============ FUNCIÓN DE IMPRESIÓN CORREGIDA ============
     const imprimirTabla = () => {
         const ventanaImpresion = window.open('', '_blank');
         if (!ventanaImpresion) return;
@@ -467,10 +496,7 @@ const EditarTablaPedidos: React.FC = () => {
                             <th>15kg</th>
                             <th>45kg</th>
                             <th>Precio</th>
-                            <th>Estado</th>
-                            <th>Tipo Pedido</th>
-                            <th>Repartidor</th>
-                            <th>Tipo Entrega</th>
+                            <th>E/T</th>
                             <th>✓</th>
                         </tr>
                     </thead>
@@ -483,8 +509,7 @@ const EditarTablaPedidos: React.FC = () => {
             const kg15 = pedido.garrafa_15kg || 0;
             const kg45 = pedido.garrafa_45kg || 0;
             const precioNum = Number(pedido.precio) || 0;
-            const repartidorNombre = pedido.repartidor_nombre ? `${pedido.repartidor_nombre} ${pedido.repartidor_apellido || ''}` : 'Sin asignar';
-            const tipoEntrega = pedido.es_programado ? 'Programado' : 'Inmediato';
+            const tipoEntrega = pedido.es_programado ? 'P' : 'I';
 
             total10kg += kg10;
             total15kg += kg15;
@@ -504,35 +529,30 @@ const EditarTablaPedidos: React.FC = () => {
                     <td class="text-center">${kg15 > 0 ? kg15 : ''}</td>
                     <td class="text-center">${kg45 > 0 ? kg45 : ''}</td>
                     <td class="text-right">${precioNum > 0 ? '$' + precioNum.toFixed(2) : ''}</td>
-                    <td>${pedido.estado || ''}</td>
-                    <td>${pedido.tipo_pedido || ''}</td>
-                    <td>${repartidorNombre}</td>
                     <td class="text-center">${tipoEntrega}</td>
                     <td class="text-center"></td>
                 </tr>
             `;
         });
 
+        // Renglones vacíos para llegar a 35
         for (let i = pedidos.length + 1; i <= TOTAL_RENGLONES_IMPRESION; i++) {
             const num = i + (paginaActual - 1) * registrosPorPagina;
             tablaHtml += `
                 <tr>
                     <td class="text-center">${num}</td>
-                    <td class="text-center"></td>
-                    <td class="text-center"></td>
-                    <td class="text-center"></td>
-                    <td class="text-center"></td>
-                    <td class="text-center"></td>
-                    <td class="text-center"></td>
-                    <td class="text-center"></td>
-                    <td class="text-center"></td>
-                    <td class="text-center"></td>
-                    <td class="text-right"></td>
-                    <td class="text-center"></td>
-                    <td class="text-center"></td>
-                    <td class="text-center"></td>
-                    <td class="text-center"></td>
-                    <td class="text-center"></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
                 </tr>
             `;
         }
@@ -541,17 +561,12 @@ const EditarTablaPedidos: React.FC = () => {
                     </tbody>
                     <tfoot>
                         <tr class="totales">
-                            <td colspan="6" class="text-right"><strong>TOTALES:</strong></td>
-                            <td class="text-center"></td>
+                            <td colspan="7" class="text-right"><strong>TOTALES:</strong></td>
                             <td class="text-center"><strong>${total10kg > 0 ? total10kg : ''}</strong></td>
                             <td class="text-center"><strong>${total15kg > 0 ? total15kg : ''}</strong></td>
                             <td class="text-center"><strong>${total45kg > 0 ? total45kg : ''}</strong></td>
                             <td class="text-right"><strong>${totalPrecioImpresion > 0 ? '$' + totalPrecioImpresion.toFixed(2) : ''}</strong></td>
-                            <td class="text-center"></td>
-                            <td class="text-center"></td>
-                            <td class="text-center"></td>
-                            <td class="text-center"></td>
-                            <td class="text-center"></td>
+                            <td colspan="2"></td>
                         </tr>
                     </tfoot>
                 </table>
