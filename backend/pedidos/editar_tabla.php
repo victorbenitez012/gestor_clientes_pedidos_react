@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $registros_por_pagina = isset($_GET['registros_por_pagina']) ? (int)$_GET['registros_por_pagina'] : 50;
     $offset = ($pagina - 1) * $registros_por_pagina;
 
-    // Construir consulta base
+    // Construir consulta base (ACTUALIZADA con fecha programada)
     $query = "
         SELECT 
             pedidos.id, 
@@ -40,6 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             pedidos.garrafa_10kg, 
             pedidos.garrafa_15kg, 
             pedidos.garrafa_45kg,
+            pedidos.fecha_entrega_programada,
+            pedidos.es_programado,
             clientes.direccion, 
             clientes.barrio, 
             clientes.telefono, 
@@ -134,6 +136,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             pedidos.garrafa_10kg, 
             pedidos.garrafa_15kg, 
             pedidos.garrafa_45kg,
+            pedidos.fecha_entrega_programada,
+            pedidos.es_programado,
             clientes.direccion, 
             clientes.barrio, 
             clientes.telefono, 
@@ -182,6 +186,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $fila['garrafa_15kg'] = isset($fila['garrafa_15kg']) ? (int)$fila['garrafa_15kg'] : 0;
             $fila['garrafa_45kg'] = isset($fila['garrafa_45kg']) ? (int)$fila['garrafa_45kg'] : 0;
             $fila['precio'] = isset($fila['precio']) ? (float)$fila['precio'] : 0;
+            $fila['fecha_entrega_programada'] = isset($fila['fecha_entrega_programada']) ? $fila['fecha_entrega_programada'] : null;
+            $fila['es_programado'] = isset($fila['es_programado']) ? (int)$fila['es_programado'] : 0;
             $pedidos[] = $fila;
         }
         
@@ -248,6 +254,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $observacion_pedido = isset($pedido['observacion_pedido']) ? $pedido['observacion_pedido'] : '';
         $repartidor_id = isset($pedido['repartidor_id']) && !empty($pedido['repartidor_id']) ? (int)$pedido['repartidor_id'] : null;
         
+        // NUEVOS CAMPOS: Fecha programada
+        $fecha_entrega_programada = isset($pedido['fecha_entrega_programada']) && !empty($pedido['fecha_entrega_programada']) ? $pedido['fecha_entrega_programada'] : null;
+        $es_programado = isset($pedido['es_programado']) ? (int)$pedido['es_programado'] : 0;
+        
         // Verificar si el pedido tiene garrafas > 0
         $tieneGarrafas = ($garrafa_10kg > 0 || $garrafa_15kg > 0 || $garrafa_45kg > 0);
         
@@ -278,7 +288,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmtInfo->close();
         }
         
-        // Actualizar pedido
+        // Actualizar pedido (ACTUALIZADO con fecha programada)
         $queryUpdate = "
             UPDATE pedidos 
             SET tipo_pedido = ?,
@@ -288,14 +298,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 repartidor_id = ?, 
                 garrafa_10kg = ?, 
                 garrafa_15kg = ?, 
-                garrafa_45kg = ?
+                garrafa_45kg = ?,
+                fecha_entrega_programada = ?,
+                es_programado = ?
             WHERE id = ?
         ";
         
         $stmt = $conexion->prepare($queryUpdate);
         
         if ($stmt) {
-            $stmt->bind_param("ssdsiiiii", 
+            $stmt->bind_param("ssdsiiiiisi", 
                 $tipo_pedido,
                 $estado, 
                 $precio, 
@@ -303,7 +315,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $repartidor_id, 
                 $garrafa_10kg, 
                 $garrafa_15kg, 
-                $garrafa_45kg, 
+                $garrafa_45kg,
+                $fecha_entrega_programada,
+                $es_programado,
                 $id
             );
             
@@ -318,6 +332,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($garrafa_15kg > 0) $detalleGarrafas[] = "15kg: $garrafa_15kg";
                     if ($garrafa_45kg > 0) $detalleGarrafas[] = "45kg: $garrafa_45kg";
                     
+                    // Información de fecha programada
+                    $infoFecha = "";
+                    if ($es_programado && $fecha_entrega_programada) {
+                        $fechaFormateada = date('d/m/Y', strtotime($fecha_entrega_programada));
+                        $infoFecha = "\n📅 *Entrega Programada:* $fechaFormateada";
+                    }
+                    
                     // Formato de WhatsApp con negritas usando *
                     $mensajeWhatsApp = "*🛵 PEDIDO MODIFICADO* 🛵\n\n";
                     $mensajeWhatsApp .= "*🆔 ID Pedido:* $id\n";
@@ -329,12 +350,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $mensajeWhatsApp .= "*💰 Precio:* $" . number_format($precio, 2) . "\n";
                     $mensajeWhatsApp .= "*📝 Observación:* " . ($observacion_pedido ?: 'Ninguna') . "\n";
                     $mensajeWhatsApp .= "*📋 Estado:* $estado\n";
+                    $mensajeWhatsApp .= $infoFecha;
                     
                     if ($infoPedido['cliente_observacion']) {
-                        $mensajeWhatsApp .= "*📌 Observación Cliente:* " . $infoPedido['cliente_observacion'] . "\n";
+                        $mensajeWhatsApp .= "\n*📌 Observación Cliente:* " . $infoPedido['cliente_observacion'];
                     }
                     
-                    $mensajeWhatsApp .= "\n---\n📱 Enviado desde Sistema de Gestión";
+                    $mensajeWhatsApp .= "\n\n---\n📱 Enviado desde Sistema de Gestión";
                     
                     // Limpiar teléfono (solo números)
                     $telefonoRepartidor = preg_replace('/[^0-9]/', '', $infoPedido['repartidor_telefono']);

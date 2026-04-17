@@ -6,7 +6,8 @@ import Clientes from './components/private/Clientes';
 import ClientesAgregar from './components/private/ClientesAgregar';
 import ClientesBuscar from './components/private/ClientesBuscar';
 import Pedidos from './components/private/Pedidos';
-import AgregarPedido from './components/private/AgregarPedido';
+
+import AgregarPedido from './components/private/agregar-pedido/AgregarPedido';
 import EditarTablaPedidos from './components/private/EditarTablaPedidos';
 import Repartidores from './components/private/Repartidores';
 import RepartidoresBuscar from './components/private/RepartidoresBuscar';

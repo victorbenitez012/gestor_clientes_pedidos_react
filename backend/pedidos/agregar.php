@@ -36,11 +36,12 @@ if (isset($_GET['buscar_cliente_total']) && isset($_GET['buscar_busqueda']) && !
     exit();
 }
 
-// 2. Obtener últimos 10 pedidos de un cliente
+// 2. Obtener últimos 10 pedidos de un cliente (ACTUALIZADO con fecha programada)
 if (isset($_GET['obtener_pedidos']) && isset($_GET['cliente_id']) && !empty($_GET['cliente_id'])) {
     $cliente_id = intval($_GET['cliente_id']);
 
-    $query = "SELECT p.id, p.tipo_pedido, p.observacion_pedido, p.estado, p.precio, p.fecha_creacion, 
+    $query = "SELECT p.id, p.tipo_pedido, p.observacion_pedido, p.estado, p.precio, p.fecha_creacion,
+                     p.fecha_entrega_programada, p.es_programado,
                      c.nombre AS cliente_nombre, c.direccion, c.barrio, c.telefono, c.observacion AS observacion_cliente,
                      r.nombre AS repartidor_nombre, r.apellido AS repartidor_apellido
               FROM pedidos p
@@ -112,6 +113,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $garrafa_15kg = intval($_POST['garrafa_15kg'] ?? 0);
     $garrafa_45kg = intval($_POST['garrafa_45kg'] ?? 0);
     $cliente_id_existente = !empty($_POST['cliente_id']) ? intval($_POST['cliente_id']) : null;
+    
+    // NUEVOS CAMPOS: Fecha programada
+    $fecha_entrega_programada = !empty($_POST['fecha_entrega_programada']) ? $_POST['fecha_entrega_programada'] : null;
+    $es_programado = isset($_POST['es_programado']) ? intval($_POST['es_programado']) : 0;
 
     // Validar que haya al menos una garrafa
     if ($garrafa_10kg == 0 && $garrafa_15kg == 0 && $garrafa_45kg == 0) {
@@ -122,6 +127,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Validar campos obligatorios
     if (empty($direccion_cliente) || empty($telefono_cliente) || $precio < 0) {
         header("Location: agregar.php?error=FaltanDatos");
+        exit();
+    }
+    
+    // Validar fecha programada
+    if ($es_programado && empty($fecha_entrega_programada)) {
+        header("Location: agregar.php?error=FechaNoSeleccionada");
         exit();
     }
 
@@ -199,13 +210,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($garrafa_45kg > 0) $tipo_pedido .= "$garrafa_45kg x 45kg";
     $tipo_pedido = trim($tipo_pedido);
     
+    // NUEVA QUERY con fecha programada
     $query_insertar_pedido = "INSERT INTO pedidos 
-        (cliente_id, tipo_pedido, observacion_pedido, estado, repartidor_id, precio, garrafa_10kg, garrafa_15kg, garrafa_45kg) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        (cliente_id, tipo_pedido, observacion_pedido, estado, repartidor_id, precio, 
+         garrafa_10kg, garrafa_15kg, garrafa_45kg, fecha_entrega_programada, es_programado) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     $stmt_insertar_pedido = $conexion->prepare($query_insertar_pedido);
     $stmt_insertar_pedido->bind_param(
-        "isssdiiii",
+        "isssdiiiiis",
         $cliente_id,
         $tipo_pedido,
         $observacion_pedido,
@@ -214,10 +227,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $precio,
         $garrafa_10kg,
         $garrafa_15kg,
-        $garrafa_45kg
+        $garrafa_45kg,
+        $fecha_entrega_programada,
+        $es_programado
     );
 
     if ($stmt_insertar_pedido->execute()) {
+        // Agregar información de fecha programada al mensaje de WhatsApp
+        $info_fecha = "";
+        if ($es_programado && $fecha_entrega_programada) {
+            $fecha_formateada = date('d/m/Y', strtotime($fecha_entrega_programada));
+            $info_fecha = "\n📅 *Entrega Programada:* $fecha_formateada";
+        }
+        
         if ($repartidor_id) {
             $query_repartidor = "SELECT telefono FROM repartidores WHERE id = ?";
             $stmt_repartidor = $conexion->prepare($query_repartidor);
@@ -239,6 +261,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $mensaje_whatsapp .= "Observaciones: $observacion_pedido\n";
                     $mensaje_whatsapp .= "Estado: $estado\n";
                     $mensaje_whatsapp .= "Precio: $" . number_format($precio, 2);
+                    $mensaje_whatsapp .= $info_fecha;
 
                     $mensaje_whatsapp_codificado = urlencode($mensaje_whatsapp);
                     $whatsapp_url = "https://api.whatsapp.com/send?phone=$telefono_repartidor&text=$mensaje_whatsapp_codificado";
@@ -272,7 +295,12 @@ if (isset($_GET['success'])) {
     echo "<script>alert('" . htmlspecialchars($_GET['mensaje'] ?? 'Pedido registrado exitosamente') . "'); window.location.href = 'agregar.php';</script>";
     exit();
 } elseif (isset($_GET['error'])) {
-    echo "<script>alert('Error al procesar el pedido'); window.location.href = 'agregar.php';</script>";
+    $error_msg = $_GET['error'];
+    if ($error_msg == 'FechaNoSeleccionada') {
+        echo "<script>alert('Error: Selecciona una fecha para la entrega programada'); window.location.href = 'agregar.php';</script>";
+    } else {
+        echo "<script>alert('Error al procesar el pedido'); window.location.href = 'agregar.php';</script>";
+    }
     exit();
 }
 
@@ -285,6 +313,7 @@ if (isset($_GET['success'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agregar Pedido</title>
     <style>
+        /* Tus estilos existentes... */
         body { font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; }
         h1 { text-align: center; color: #4b0082; margin-bottom: 30px; }
         fieldset { border: 2px solid #e0d4f0; border-radius: 12px; padding: 20px; margin-bottom: 20px; background: white; }
@@ -326,6 +355,33 @@ if (isset($_GET['success'])) {
         .btn-limpiar-vertical:hover { background-color: #5a6268; }
         .btn-volver-vertical { background-color: #6c757d; color: white; }
         .btn-volver-vertical:hover { background-color: #5a6268; }
+        
+        /* NUEVOS ESTILOS para fecha programada */
+        .fecha-programada-container {
+            background-color: #FFF3E0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #FFB74D;
+        }
+        .fecha-programada-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+        .fecha-programada-label input {
+            width: auto;
+        }
+        .info-fecha {
+            background-color: #E8F5E9;
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 8px;
+            font-size: 14px;
+        }
+        
         @media (max-width: 900px) { .three-columns { flex-direction: column; } .columna-botones { width: 100%; } .botones-vertical { flex-direction: row; margin-top: 0; } .btn-guardar-vertical, .btn-limpiar-vertical, .btn-volver-vertical { flex: 1; } }
         @media (max-width: 768px) { .form-row { flex-direction: column; gap: 10px; } .garrafas-container { flex-direction: row; flex-wrap: wrap; } }
     </style>
@@ -335,6 +391,7 @@ if (isset($_GET['success'])) {
 
 <form method="POST" class="formulario-pedido">
     <input type="hidden" name="cliente_id" id="cliente_id">
+    <input type="hidden" name="es_programado" id="es_programado" value="0">
     
     <div class="campo-busqueda-cliente">
         <label>🔍 Buscar Cliente Existente (nombre, dirección, barrio o teléfono):</label>
@@ -377,7 +434,7 @@ if (isset($_GET['success'])) {
                 <legend>📦 Datos del Pedido</legend>
                 <div class="garrafas-container">
                     <div class="garrafa-card">
-                        <div class="garrafa-icon">🫙</div>
+                        <div class="garrafa-icon">🛢️</div>
                         <div class="garrafa-label">10 kg</div>
                         <div class="control-cantidad">
                             <button type="button" class="btn-cantidad" onclick="cambiarCantidad('garrafa_10kg', -1)">−</button>
@@ -386,7 +443,7 @@ if (isset($_GET['success'])) {
                         </div>
                     </div>
                     <div class="garrafa-card">
-                        <div class="garrafa-icon">🫙</div>
+                        <div class="garrafa-icon">🛢️</div>
                         <div class="garrafa-label">15 kg</div>
                         <div class="control-cantidad">
                             <button type="button" class="btn-cantidad" onclick="cambiarCantidad('garrafa_15kg', -1)">−</button>
@@ -395,7 +452,7 @@ if (isset($_GET['success'])) {
                         </div>
                     </div>
                     <div class="garrafa-card">
-                        <div class="garrafa-icon">🫙</div>
+                        <div class="garrafa-icon">🛢️</div>
                         <div class="garrafa-label">45 kg</div>
                         <div class="control-cantidad">
                             <button type="button" class="btn-cantidad" onclick="cambiarCantidad('garrafa_45kg', -1)">−</button>
@@ -404,6 +461,22 @@ if (isset($_GET['success'])) {
                         </div>
                     </div>
                 </div>
+                
+                <!-- NUEVO: Selector de fecha programada -->
+                <div class="fecha-programada-container">
+                    <label class="fecha-programada-label">
+                        <input type="checkbox" id="checkbox_programado" onchange="toggleFechaProgramada(this.checked)">
+                        📅 Programar para fecha específica
+                    </label>
+                    <div id="fecha_programada_div" style="display: none;">
+                        <div class="form-group">
+                            <label>📆 Seleccionar fecha de entrega:</label>
+                            <input type="date" name="fecha_entrega_programada" id="fecha_entrega_programada" min="<?php echo date('Y-m-d'); ?>">
+                        </div>
+                        <div id="info_fecha" class="info-fecha" style="display: none;"></div>
+                    </div>
+                </div>
+                
                 <div class="form-group">
                     <label>Observaciones del Pedido:</label>
                     <textarea name="observacion_pedido" id="observacion_pedido" rows="2"></textarea>
@@ -452,12 +525,69 @@ if (isset($_GET['success'])) {
 </form>
 
 <script>
+// Funciones existentes
 function cambiarCantidad(id, cambio) {
     let campo = document.getElementById(id);
     let valor = parseInt(campo.value) || 0;
     valor = Math.max(0, valor + cambio);
     campo.value = valor;
 }
+
+// NUEVA FUNCIÓN: Toggle fecha programada
+function toggleFechaProgramada(checked) {
+    const divFecha = document.getElementById('fecha_programada_div');
+    const esProgramado = document.getElementById('es_programado');
+    const fechaInput = document.getElementById('fecha_entrega_programada');
+    
+    if (checked) {
+        divFecha.style.display = 'block';
+        esProgramado.value = '1';
+        fechaInput.required = true;
+        
+        // Si no hay fecha seleccionada, sugerir fecha por defecto (mañana)
+        if (!fechaInput.value) {
+            const manana = new Date();
+            manana.setDate(manana.getDate() + 1);
+            fechaInput.value = manana.toISOString().split('T')[0];
+            actualizarInfoFecha();
+        }
+    } else {
+        divFecha.style.display = 'none';
+        esProgramado.value = '0';
+        fechaInput.required = false;
+        fechaInput.value = '';
+        document.getElementById('info_fecha').style.display = 'none';
+    }
+}
+
+// NUEVA FUNCIÓN: Actualizar información de fecha
+function actualizarInfoFecha() {
+    const fechaInput = document.getElementById('fecha_entrega_programada');
+    const infoDiv = document.getElementById('info_fecha');
+    
+    if (fechaInput.value) {
+        const fecha = new Date(fechaInput.value);
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        
+        const diffTime = fecha.getTime() - hoy.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        let mensaje = '';
+        if (diffDays === 0) mensaje = '🎯 Entrega programada para HOY';
+        else if (diffDays === 1) mensaje = '⏰ Entrega programada para MAÑANA';
+        else if (diffDays > 1) mensaje = `📅 Entrega programada en ${diffDays} días`;
+        else mensaje = '⚠️ Fecha pasada';
+        
+        infoDiv.innerHTML = `<strong>${mensaje}</strong><br>Fecha: ${fecha.toLocaleDateString('es-AR')}`;
+        infoDiv.style.display = 'block';
+    } else {
+        infoDiv.style.display = 'none';
+    }
+}
+
+// Escuchar cambios en la fecha
+document.getElementById('fecha_entrega_programada')?.addEventListener('change', actualizarInfoFecha);
 
 function limpiarFormulario() {
     document.getElementById('nombre_cliente').value = '';
@@ -475,6 +605,10 @@ function limpiarFormulario() {
     document.getElementById('cliente_id').value = '';
     document.getElementById('sugerencias_total').style.display = 'none';
     document.getElementById('sugerencias_direccion').style.display = 'none';
+    
+    // Limpiar fecha programada
+    document.getElementById('checkbox_programado').checked = false;
+    toggleFechaProgramada(false);
 }
 
 // Búsqueda general de clientes
@@ -514,3 +648,53 @@ inputBuscar.addEventListener('input', function() {
         sugerenciasDiv.style.display = 'none';
     }
 });
+
+// Búsqueda por dirección (mantén tu código existente)
+const inputDireccion = document.getElementById('direccion_cliente');
+const sugerenciasDireccion = document.getElementById('sugerencias_direccion');
+
+inputDireccion.addEventListener('input', function() {
+    const valor = this.value.trim();
+    if (valor.length > 2) {
+        fetch(`agregar.php?buscar_cliente=1&direccion_busqueda=${encodeURIComponent(valor)}`)
+            .then(response => response.json())
+            .then(data => {
+                sugerenciasDireccion.innerHTML = '';
+                if (data.length > 0) {
+                    sugerenciasDireccion.style.display = 'block';
+                    data.forEach(cliente => {
+                        const div = document.createElement('div');
+                        div.className = 'sugerencia';
+                        div.innerHTML = `<strong>${cliente.direccion}</strong><br><small>${cliente.barrio} - ${cliente.nombre} | Tel: ${cliente.telefono}</small>`;
+                        div.onclick = () => {
+                            document.getElementById('nombre_cliente').value = cliente.nombre;
+                            document.getElementById('direccion_cliente').value = cliente.direccion;
+                            document.getElementById('barrio_cliente').value = cliente.barrio;
+                            document.getElementById('telefono_cliente').value = cliente.telefono;
+                            document.getElementById('observacion_cliente').value = cliente.observacion || '';
+                            document.getElementById('cliente_id').value = cliente.id;
+                            sugerenciasDireccion.style.display = 'none';
+                        };
+                        sugerenciasDireccion.appendChild(div);
+                    });
+                } else {
+                    sugerenciasDireccion.style.display = 'none';
+                }
+            });
+    } else {
+        sugerenciasDireccion.style.display = 'none';
+    }
+});
+
+// Cerrar sugerencias al hacer clic fuera
+document.addEventListener('click', function(e) {
+    if (!inputBuscar.contains(e.target) && !sugerenciasDiv.contains(e.target)) {
+        sugerenciasDiv.style.display = 'none';
+    }
+    if (!inputDireccion.contains(e.target) && !sugerenciasDireccion.contains(e.target)) {
+        sugerenciasDireccion.style.display = 'none';
+    }
+});
+</script>
+</body>
+</html>
