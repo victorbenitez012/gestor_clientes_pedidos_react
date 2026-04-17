@@ -36,7 +36,7 @@ if (isset($_GET['buscar_cliente_total']) && isset($_GET['buscar_busqueda']) && !
     exit();
 }
 
-// 2. Obtener últimos 10 pedidos de un cliente (ACTUALIZADO con fecha programada)
+// 2. Obtener últimos 10 pedidos de un cliente
 if (isset($_GET['obtener_pedidos']) && isset($_GET['cliente_id']) && !empty($_GET['cliente_id'])) {
     $cliente_id = intval($_GET['cliente_id']);
 
@@ -218,7 +218,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $stmt_insertar_pedido = $conexion->prepare($query_insertar_pedido);
     $stmt_insertar_pedido->bind_param(
-        "isssdiiiiis",
+        "isssdiiiisi",
         $cliente_id,
         $tipo_pedido,
         $observacion_pedido,
@@ -313,7 +313,6 @@ if (isset($_GET['success'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agregar Pedido</title>
     <style>
-        /* Tus estilos existentes... */
         body { font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; }
         h1 { text-align: center; color: #4b0082; margin-bottom: 30px; }
         fieldset { border: 2px solid #e0d4f0; border-radius: 12px; padding: 20px; margin-bottom: 20px; background: white; }
@@ -331,13 +330,6 @@ if (isset($_GET['success'])) {
         .control-cantidad input { width: 60px; text-align: center; font-size: 16px; font-weight: bold; padding: 8px; }
         .btn-cantidad { width: 32px; height: 32px; background-color: #6a4c9c; color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 18px; }
         .btn-cantidad:hover { background-color: #5b3c80; }
-        .botones { display: flex; gap: 15px; justify-content: flex-end; margin-top: 20px; }
-        .btn-guardar { background-color: #4CAF50; color: white; padding: 12px 30px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        .btn-guardar:hover { background-color: #45a049; }
-        .btn-limpiar { background-color: #6c757d; color: white; padding: 12px 30px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        .btn-limpiar:hover { background-color: #5a6268; }
-        .btn-volver { background-color: #6c757d; color: white; padding: 12px 30px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; text-decoration: none; display: inline-block; }
-        .btn-volver:hover { background-color: #5a6268; }
         .sugerencias { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 8px; max-height: 200px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         .sugerencia { padding: 12px; cursor: pointer; border-bottom: 1px solid #eee; }
         .sugerencia:hover { background-color: #f5f0ff; }
@@ -356,7 +348,6 @@ if (isset($_GET['success'])) {
         .btn-volver-vertical { background-color: #6c757d; color: white; }
         .btn-volver-vertical:hover { background-color: #5a6268; }
         
-        /* NUEVOS ESTILOS para fecha programada */
         .fecha-programada-container {
             background-color: #FFF3E0;
             border-radius: 8px;
@@ -391,7 +382,6 @@ if (isset($_GET['success'])) {
 
 <form method="POST" class="formulario-pedido">
     <input type="hidden" name="cliente_id" id="cliente_id">
-    <input type="hidden" name="es_programado" id="es_programado" value="0">
     
     <div class="campo-busqueda-cliente">
         <label>🔍 Buscar Cliente Existente (nombre, dirección, barrio o teléfono):</label>
@@ -462,10 +452,10 @@ if (isset($_GET['success'])) {
                     </div>
                 </div>
                 
-                <!-- NUEVO: Selector de fecha programada -->
+                <!-- Selector de fecha programada -->
                 <div class="fecha-programada-container">
                     <label class="fecha-programada-label">
-                        <input type="checkbox" id="checkbox_programado" onchange="toggleFechaProgramada(this.checked)">
+                        <input type="checkbox" name="es_programado" id="checkbox_programado" value="1" onchange="toggleFechaProgramada(this.checked)">
                         📅 Programar para fecha específica
                     </label>
                     <div id="fecha_programada_div" style="display: none;">
@@ -525,7 +515,6 @@ if (isset($_GET['success'])) {
 </form>
 
 <script>
-// Funciones existentes
 function cambiarCantidad(id, cambio) {
     let campo = document.getElementById(id);
     let valor = parseInt(campo.value) || 0;
@@ -533,18 +522,14 @@ function cambiarCantidad(id, cambio) {
     campo.value = valor;
 }
 
-// NUEVA FUNCIÓN: Toggle fecha programada
 function toggleFechaProgramada(checked) {
     const divFecha = document.getElementById('fecha_programada_div');
-    const esProgramado = document.getElementById('es_programado');
     const fechaInput = document.getElementById('fecha_entrega_programada');
     
     if (checked) {
         divFecha.style.display = 'block';
-        esProgramado.value = '1';
         fechaInput.required = true;
         
-        // Si no hay fecha seleccionada, sugerir fecha por defecto (mañana)
         if (!fechaInput.value) {
             const manana = new Date();
             manana.setDate(manana.getDate() + 1);
@@ -553,14 +538,12 @@ function toggleFechaProgramada(checked) {
         }
     } else {
         divFecha.style.display = 'none';
-        esProgramado.value = '0';
         fechaInput.required = false;
         fechaInput.value = '';
         document.getElementById('info_fecha').style.display = 'none';
     }
 }
 
-// NUEVA FUNCIÓN: Actualizar información de fecha
 function actualizarInfoFecha() {
     const fechaInput = document.getElementById('fecha_entrega_programada');
     const infoDiv = document.getElementById('info_fecha');
@@ -586,7 +569,6 @@ function actualizarInfoFecha() {
     }
 }
 
-// Escuchar cambios en la fecha
 document.getElementById('fecha_entrega_programada')?.addEventListener('change', actualizarInfoFecha);
 
 function limpiarFormulario() {
@@ -606,7 +588,6 @@ function limpiarFormulario() {
     document.getElementById('sugerencias_total').style.display = 'none';
     document.getElementById('sugerencias_direccion').style.display = 'none';
     
-    // Limpiar fecha programada
     document.getElementById('checkbox_programado').checked = false;
     toggleFechaProgramada(false);
 }
@@ -649,7 +630,7 @@ inputBuscar.addEventListener('input', function() {
     }
 });
 
-// Búsqueda por dirección (mantén tu código existente)
+// Búsqueda por dirección
 const inputDireccion = document.getElementById('direccion_cliente');
 const sugerenciasDireccion = document.getElementById('sugerencias_direccion');
 
@@ -686,7 +667,6 @@ inputDireccion.addEventListener('input', function() {
     }
 });
 
-// Cerrar sugerencias al hacer clic fuera
 document.addEventListener('click', function(e) {
     if (!inputBuscar.contains(e.target) && !sugerenciasDiv.contains(e.target)) {
         sugerenciasDiv.style.display = 'none';
