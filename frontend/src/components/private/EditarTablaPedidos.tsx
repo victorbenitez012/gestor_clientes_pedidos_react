@@ -451,7 +451,6 @@ const EditarTablaPedidos: React.FC = () => {
         setTimeout(() => setMensaje(''), 3000);
     };
 
-    // ============ FUNCIÓN DE IMPRESIÓN CORREGIDA ============
     const imprimirTabla = () => {
         const ventanaImpresion = window.open('', '_blank');
         if (!ventanaImpresion) return;
@@ -459,49 +458,94 @@ const EditarTablaPedidos: React.FC = () => {
         let total10kg = 0, total15kg = 0, total45kg = 0, totalPrecioImpresion = 0;
 
         let tablaHtml = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Imprimir Pedidos</title>
-                <meta charset="UTF-8">
-                <style>
-                    * { font-family: Arial, sans-serif; }
-                    body { margin: 20px; padding: 0; }
-                    h1 { text-align: center; margin-bottom: 20px; color: #4b0082; }
-                    table { border-collapse: collapse; width: 100%; margin-bottom: 20px; font-size: 11px; }
-                    th, td { border: 1px solid #000; padding: 5px; text-align: left; vertical-align: top; }
-                    th { background-color: #f2f2f2; font-weight: bold; text-align: center; }
-                    .text-center { text-align: center; }
-                    .text-right { text-align: right; }
-                    .totales { font-weight: bold; background-color: #f0f0f0; }
-                    @media print {
-                        body { margin: 0; padding: 10px; }
-                        th, td { padding: 4px; }
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Imprimir Pedidos</title>
+            <meta charset="UTF-8">
+            <style>
+                * { 
+                    font-family: Arial, sans-serif; 
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+                body { 
+                    margin: 20px; 
+                    padding: 0; 
+                }
+                h1 { 
+                    text-align: center; 
+                    margin-bottom: 20px; 
+                    color: #4b0082; 
+                    font-size: 18px;
+                }
+                table { 
+                    border-collapse: collapse; 
+                    width: 100%; 
+                    margin-bottom: 20px; 
+                    font-size: 11px; 
+                }
+                th, td { 
+                    border: 1px solid #000; 
+                    padding: 5px; 
+                    text-align: left; 
+                    vertical-align: top; 
+                }
+                th { 
+                    background-color: #f2f2f2; 
+                    font-weight: bold; 
+                    text-align: center; 
+                }
+                .text-center { 
+                    text-align: center !important; 
+                }
+                .text-right { 
+                    text-align: right !important; 
+                }
+                .text-left { 
+                    text-align: left !important; 
+                }
+                .totales { 
+                    font-weight: bold; 
+                    background-color: #f0f0f0; 
+                }
+                .precio-columna {
+                    text-align: right !important;
+                }
+                @media print {
+                    body { 
+                        margin: 0; 
+                        padding: 10px; 
                     }
-                </style>
-            </head>
-            <body>
-                <h1>Planilla de Pedidos</h1>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Dirección</th>
-                            <th>Barrio</th>
-                            <th>Teléfono</th>
-                            <th>Nombre Cliente</th>
-                            <th>Observación Cliente</th>
-                            <th>Observación Pedido</th>
-                            <th>10kg</th>
-                            <th>15kg</th>
-                            <th>45kg</th>
-                            <th>Precio</th>
-                            <th>E/T</th>
-                            <th>✓</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
+                    th, td { 
+                        padding: 4px; 
+                    }
+                }
+            </style>
+        </head>
+        <body>
+            <h1>Planilla de Pedidos</h1>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="text-center">#</th>
+                        <th class="text-left">Dirección</th>
+                        <th class="text-left">Barrio</th>
+                        <th class="text-left">Teléfono</th>
+                        <th class="text-left">Nombre Cliente</th>
+                        <th class="text-left">Observación Cliente</th>
+                        <th class="text-left">Observación Pedido</th>
+                        <th class="text-center">10kg</th>
+                        <th class="text-center">15kg</th>
+                        <th class="text-center">45kg</th>
+                        <th class="text-right">Precio</th>
+                        <th class="text-center">E/T</th>
+                        <th class="text-center">✓</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
 
         pedidos.forEach((pedido, idx) => {
             const num = idx + 1 + (paginaActual - 1) * registrosPorPagina;
@@ -517,71 +561,70 @@ const EditarTablaPedidos: React.FC = () => {
             totalPrecioImpresion += precioNum;
 
             tablaHtml += `
-                <tr>
-                    <td class="text-center">${num}</td>
-                    <td>${pedido.direccion || ''}</td>
-                    <td>${pedido.barrio || ''}</td>
-                    <td>${pedido.telefono || ''}</td>
-                    <td>${pedido.cliente_nombre || ''}</td>
-                    <td>${pedido.cliente_observacion || ''}</td>
-                    <td>${pedido.observacion_pedido || ''}</td>
-                    <td class="text-center">${kg10 > 0 ? kg10 : ''}</td>
-                    <td class="text-center">${kg15 > 0 ? kg15 : ''}</td>
-                    <td class="text-center">${kg45 > 0 ? kg45 : ''}</td>
-                    <td class="text-right">${precioNum > 0 ? '$' + precioNum.toFixed(2) : ''}</td>
-                    <td class="text-center">${tipoEntrega}</td>
-                    <td class="text-center"></td>
-                </tr>
-            `;
+            <tr>
+                <td class="text-center">${num}</td>
+                <td class="text-left">${pedido.direccion || ''}</td>
+                <td class="text-left">${pedido.barrio || ''}</td>
+                <td class="text-left">${pedido.telefono || ''}</td>
+                <td class="text-left">${pedido.cliente_nombre || ''}</td>
+                <td class="text-left">${pedido.cliente_observacion || ''}</td>
+                <td class="text-left">${pedido.observacion_pedido || ''}</td>
+                <td class="text-center">${kg10 > 0 ? kg10 : ''}</td>
+                <td class="text-center">${kg15 > 0 ? kg15 : ''}</td>
+                <td class="text-center">${kg45 > 0 ? kg45 : ''}</td>
+                <td class="text-right">${precioNum > 0 ? '$' + precioNum.toFixed(2) : ''}</td>
+                <td class="text-center">${tipoEntrega}</td>
+                <td class="text-center"></td>
+            </tr>
+        `;
         });
 
         // Renglones vacíos para llegar a 35
         for (let i = pedidos.length + 1; i <= TOTAL_RENGLONES_IMPRESION; i++) {
             const num = i + (paginaActual - 1) * registrosPorPagina;
             tablaHtml += `
-                <tr>
-                    <td class="text-center">${num}</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-            `;
+            <tr>
+                <td class="text-center">${num}</td>
+                <td class="text-left"></td>
+                <td class="text-left"></td>
+                <td class="text-left"></td>
+                <td class="text-left"></td>
+                <td class="text-left"></td>
+                <td class="text-left"></td>
+                <td class="text-center"></td>
+                <td class="text-center"></td>
+                <td class="text-center"></td>
+                <td class="text-right"></td>
+                <td class="text-center"></td>
+                <td class="text-center"></td>
+            </tr>
+        `;
         }
 
         tablaHtml += `
-                    </tbody>
-                    <tfoot>
-                        <tr class="totales">
-                            <td colspan="7" class="text-right"><strong>TOTALES:</strong></td>
-                            <td class="text-center"><strong>${total10kg > 0 ? total10kg : ''}</strong></td>
-                            <td class="text-center"><strong>${total15kg > 0 ? total15kg : ''}</strong></td>
-                            <td class="text-center"><strong>${total45kg > 0 ? total45kg : ''}</strong></td>
-                            <td class="text-right"><strong>${totalPrecioImpresion > 0 ? '$' + totalPrecioImpresion.toFixed(2) : ''}</strong></td>
-                            <td colspan="2"></td>
-                        </tr>
-                    </tfoot>
-                </table>
-                <p style="text-align: center; font-size: 10px; margin-top: 20px;">
-                    Fecha de impresión: ${new Date().toLocaleString()}
-                </p>
-            </body>
-            </html>
-        `;
+                </tbody>
+                <tfoot>
+                    <tr class="totales">
+                        <td colspan="7" class="text-right"><strong>TOTALES:</strong></td>
+                        <td class="text-center"><strong>${total10kg > 0 ? total10kg : ''}</strong></td>
+                        <td class="text-center"><strong>${total15kg > 0 ? total15kg : ''}</strong></td>
+                        <td class="text-center"><strong>${total45kg > 0 ? total45kg : ''}</strong></td>
+                        <td class="text-right"><strong>${totalPrecioImpresion > 0 ? '$' + totalPrecioImpresion.toFixed(2) : ''}</strong></td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+            </table>
+            <p style="text-align: center; font-size: 10px; margin-top: 20px;">
+                Fecha de impresión: ${new Date().toLocaleString()}
+            </p>
+        </body>
+        </html>
+    `;
 
         ventanaImpresion.document.write(tablaHtml);
         ventanaImpresion.document.close();
         ventanaImpresion.print();
     };
-
     const cambiarPagina = (pagina: number) => {
         if (pagina >= 1 && pagina <= totalPaginas) {
             setPaginaActual(pagina);

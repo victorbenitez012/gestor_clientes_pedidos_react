@@ -128,16 +128,7 @@ const SelectorFecha: React.FC<SelectorFechaProps> = ({
                             </div>
                         )}
                     </div>
-
-                    <div className="form-group">
-                        <label>📝 Recordatorio (opcional):</label>
-                        <select style={{ width: '100%', padding: '8px' }}>
-                            <option value="">Sin recordatorio</option>
-                            <option value="1dia">1 día antes</option>
-                            <option value="2dias">2 días antes</option>
-                            <option value="3dias">3 días antes</option>
-                        </select>
-                    </div>
+                    
                 </div>
             )}
 

@@ -1,0 +1,16 @@
+SQL para agregar columnas de fecha programada
+sql
+-- Agregar columna es_programado (0 = No, 1 = Sí)
+ALTER TABLE pedidos 
+ADD COLUMN es_programado TINYINT(1) NOT NULL DEFAULT 0 
+COMMENT '0=Inmediato, 1=Programado';
+
+-- Agregar columna fecha_entrega_programada
+ALTER TABLE pedidos 
+ADD COLUMN fecha_entrega_programada DATE NULL DEFAULT NULL 
+COMMENT 'Fecha programada para la entrega';
+Si quieres hacerlo en un solo comando:
+sql
+ALTER TABLE pedidos 
+ADD COLUMN es_programado TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0=Inmediato, 1=Programado',
+ADD COLUMN fecha_entrega_programada DATE NULL DEFAULT NULL COMMENT 'Fecha programada para la entrega';
