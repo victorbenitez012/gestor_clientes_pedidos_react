@@ -323,3 +323,50 @@ export const contarPedidosPorEstado = async (estado: string) => {
 
     return data.total || 0;
 };
+
+// ============ API PARA EditarTablaPedidos (NUEVO - sin eliminar nada) ============
+
+export const pedidosApi = {
+    // Obtener pedidos con filtros
+    getPedidos: async (params: any) => {
+        const queryString = new URLSearchParams(params).toString();
+        const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/pedidos/editar_tabla.php?${queryString}`, {
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        if (!response.ok) throw new Error('Error al cargar pedidos');
+        return response.json();
+    },
+
+    // Actualizar pedidos
+    updatePedidos: async (pedidos: any[]) => {
+        const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/pedidos/editar_tabla.php', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pedidos, update_all: true })
+        });
+        if (!response.ok) throw new Error('Error al guardar cambios');
+        return response.json();
+    },
+
+    // Obtener repartidores
+    getRepartidores: async () => {
+        const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/repartidores/index.php', {
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        if (!response.ok) throw new Error('Error al cargar repartidores');
+        return response.json();
+    }
+};
+
+// ============ EXPORT ADICIONAL PARA EL HOOK usePedidos ============
+// Esto es para que el hook usePedidos pueda importar el objeto 'api'
+export const api = {
+    getRepartidores: pedidosApi.getRepartidores,
+    getPedidos: pedidosApi.getPedidos,
+    guardarPedidos: pedidosApi.updatePedidos
+};
+
+export default api;

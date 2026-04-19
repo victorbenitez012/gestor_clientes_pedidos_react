@@ -6,9 +6,8 @@ import Clientes from './components/private/Clientes';
 import ClientesAgregar from './components/private/ClientesAgregar';
 import ClientesBuscar from './components/private/ClientesBuscar';
 import Pedidos from './components/private/Pedidos';
-
 import AgregarPedido from './components/private/agregar-pedido/AgregarPedido';
-import EditarTablaPedidos from './components/private/EditarTablaPedidos';
+import { EditarTablaPedidos } from './components/private/EditarTablaPedidos';
 import Repartidores from './components/private/Repartidores';
 import RepartidoresBuscar from './components/private/RepartidoresBuscar';
 import RepartidoresAgregar from './components/private/RepartidoresAgregar';
@@ -18,7 +17,7 @@ const App = () => {
     return (
         <Router basename="/gestor_clientes_pedidos_react">
             <Routes>
-                {/* Ruta p�blica */}
+                {/* Ruta pública */}
                 <Route path="/login" element={<Login />} />
 
                 {/* Ruta protegida: Dashboard (accesible para admin y user) */}
@@ -40,6 +39,7 @@ const App = () => {
                         </PrivateRoute>
                     }
                 />
+
                 {/* Ruta protegida: ClientesAgregar (solo accesible para admin) */}
                 <Route
                     path="/ClientesAgregar"
@@ -49,6 +49,7 @@ const App = () => {
                         </PrivateRoute>
                     }
                 />
+
                 {/* Ruta protegida: ClientesBuscar (solo accesible para admin) */}
                 <Route
                     path="/ClientesBuscar"
@@ -78,6 +79,7 @@ const App = () => {
                         </PrivateRoute>
                     }
                 />
+
                 {/* Ruta protegida: RepartidoresBuscar (solo accesible para admin) */}
                 <Route
                     path="/repartidoresbuscar"
@@ -87,6 +89,7 @@ const App = () => {
                         </PrivateRoute>
                     }
                 />
+
                 {/* Ruta protegida: RepartidoresAgregar (solo accesible para admin) */}
                 <Route
                     path="/repartidoresagregar"
@@ -96,6 +99,7 @@ const App = () => {
                         </PrivateRoute>
                     }
                 />
+
                 {/* Ruta protegida: EditarTablaPedidos (accesible para admin y user) */}
                 <Route
                     path="/pedidos/editar_tabla"
@@ -105,7 +109,8 @@ const App = () => {
                         </PrivateRoute>
                     }
                 />
-                {/* Ruta protegida: agregar-pedido  (accesible para admin y user) */}
+
+                {/* Ruta protegida: agregar-pedido (accesible para admin y user) */}
                 <Route
                     path="/pedidos/agregar"
                     element={
@@ -113,13 +118,12 @@ const App = () => {
                             <AgregarPedido />
                         </PrivateRoute>
                     }
-                />               
-            
+                />
+
                 {/* Ruta por defecto: Redirigir a /login si no coincide ninguna ruta */}
                 <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
         </Router>
-
     );
 };
 

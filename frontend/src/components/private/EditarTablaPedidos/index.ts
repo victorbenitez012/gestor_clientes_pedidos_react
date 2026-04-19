@@ -1,0 +1,1 @@
+export { EditarTablaPedidos } from './EditarTablaPedidos';
