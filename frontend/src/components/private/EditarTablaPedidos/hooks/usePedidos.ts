@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Pedido, PedidoModificado, FiltrosPedidos, GetPedidosResponse } from '../../../../types/types';
 import { api } from '../../../../services/api';
 import { haCambiado, formatearPedido, normalizarFecha, obtenerFechaManana } from '../utils/formateadores';

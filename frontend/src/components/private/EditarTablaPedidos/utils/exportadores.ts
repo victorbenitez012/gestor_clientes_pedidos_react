@@ -1,13 +1,13 @@
 ﻿import * as XLSX from 'xlsx';
-import { Pedido } from '../../../../types/types';
+import { Pedido, TotalesPedidos } from '../../../../types/types';
 
-export const exportarExcel = (pedidos: Pedido[], paginaActual: number, registrosPorPagina: number, totales: { totalPrecio: number; totalGarrafas10kg: number; totalGarrafas15kg: number; totalGarrafas45kg: number }) => {
+export const exportarExcel = (pedidos: Pedido[], paginaActual: number, registrosPorPagina: number, totales: TotalesPedidos) => {
     const datosExcel: any[][] = [];
 
     datosExcel.push([
         '#', 'Dirección', 'Barrio', 'Teléfono', 'Nombre Cliente',
         'Observación Cliente', 'Observación Pedido', '10kg', '15kg', '45kg',
-        'Precio', 'Estado', 'Tipo Pedido', 'Repartidor', 'Tipo Entrega', 'Fecha Programada'
+        'Precio', 'E/T', '✓'
     ]);
 
     pedidos.forEach((pedido, index) => {
@@ -23,17 +23,23 @@ export const exportarExcel = (pedidos: Pedido[], paginaActual: number, registros
             pedido.garrafa_15kg || 0,
             pedido.garrafa_45kg || 0,
             pedido.precio || 0,
-            pedido.estado,
-            pedido.tipo_pedido,
-            pedido.repartidor_nombre ? `${pedido.repartidor_nombre} ${pedido.repartidor_apellido}` : 'Sin asignar',
-            pedido.es_programado ? 'Programado' : 'Inmediato',
-            pedido.es_programado ? formatearFechaExcel(pedido.fecha_entrega_programada) : ''
+            pedido.es_programado ? 'P' : 'I',
+            ''
         ]);
     });
 
+    // Rellenar hasta 35 filas
+    const totalFilas = pedidos.length;
+    for (let i = totalFilas + 1; i <= 35; i++) {
+        datosExcel.push([
+            i + (paginaActual - 1) * registrosPorPagina,
+            '', '', '', '', '', '', '', '', '', '', '', ''
+        ]);
+    }
+
     datosExcel.push([
-        'TOTALES', '', '', '', '', '', '',
-        totales.totalGarrafas10kg, totales.totalGarrafas15kg, totales.totalGarrafas45kg, totales.totalPrecio, '', '', '', '', ''
+        'TOTALES:', '', '', '', '', '', '',
+        totales.totalGarrafas10kg, totales.totalGarrafas15kg, totales.totalGarrafas45kg, totales.totalPrecio, '', ''
     ]);
 
     const wb = XLSX.utils.book_new();
@@ -41,20 +47,13 @@ export const exportarExcel = (pedidos: Pedido[], paginaActual: number, registros
     ws['!cols'] = [
         { wch: 5 }, { wch: 30 }, { wch: 15 }, { wch: 15 },
         { wch: 20 }, { wch: 25 }, { wch: 25 }, { wch: 8 },
-        { wch: 8 }, { wch: 8 }, { wch: 12 }, { wch: 12 },
-        { wch: 15 }, { wch: 20 }, { wch: 12 }, { wch: 12 }
+        { wch: 8 }, { wch: 8 }, { wch: 12 }, { wch: 8 }, { wch: 5 }
     ];
     XLSX.utils.book_append_sheet(wb, ws, 'Pedidos');
 
     const fecha = new Date();
     const fechaStr = `${fecha.getFullYear()}-${(fecha.getMonth() + 1).toString().padStart(2, '0')}-${fecha.getDate().toString().padStart(2, '0')}`;
     XLSX.writeFile(wb, `pedidos_${fechaStr}.xlsx`);
-};
-
-const formatearFechaExcel = (fecha: string | null | undefined): string => {
-    if (!fecha || fecha === '0000-00-00') return '';
-    const [year, month, day] = fecha.split('-');
-    return `${day}/${month}/${year}`;
 };
 
 export const generarHtmlImpresion = (pedidos: Pedido[], paginaActual: number, registrosPorPagina: number, totales: { total10kg: number; total15kg: number; total45kg: number; totalPrecio: number }, TOTAL_RENGLONES_IMPRESION: number = 35): string => {
@@ -72,9 +71,11 @@ export const generarHtmlImpresion = (pedidos: Pedido[], paginaActual: number, re
             th, td { border: 1px solid #000; padding: 5px; text-align: left; vertical-align: top; }
             th { background-color: #f2f2f2; font-weight: bold; text-align: center; }
             .text-center { text-align: center !important; }
-            .text-right { text-align: right !important; }
             .text-left { text-align: left !important; }
             .totales { font-weight: bold; background-color: #f0f0f0; }
+            .precio-columna {
+                text-align: left !important;
+            }
             @media print { body { margin: 0; padding: 10px; } th, td { padding: 4px; } }
         </style>
     </head>
@@ -93,7 +94,7 @@ export const generarHtmlImpresion = (pedidos: Pedido[], paginaActual: number, re
                     <th class="text-center">10kg</th>
                     <th class="text-center">15kg</th>
                     <th class="text-center">45kg</th>
-                    <th class="text-right">Precio</th>
+                    <th class="text-left">Precio</th>
                     <th class="text-center">E/T</th>
                     <th class="text-center">✓</th>
                 </tr>
@@ -103,7 +104,7 @@ export const generarHtmlImpresion = (pedidos: Pedido[], paginaActual: number, re
 
     pedidos.forEach((pedido, idx) => {
         const num = idx + 1 + (paginaActual - 1) * registrosPorPagina;
-        const tipoEntrega = pedido.es_programado ? 'P' : 'I';
+        
         const precioNum = Number(pedido.precio) || 0;
 
         tablaHtml += `
@@ -118,23 +119,32 @@ export const generarHtmlImpresion = (pedidos: Pedido[], paginaActual: number, re
                 <td class="text-center">${pedido.garrafa_10kg > 0 ? pedido.garrafa_10kg : ''}</td>
                 <td class="text-center">${pedido.garrafa_15kg > 0 ? pedido.garrafa_15kg : ''}</td>
                 <td class="text-center">${pedido.garrafa_45kg > 0 ? pedido.garrafa_45kg : ''}</td>
-                <td class="text-right">${precioNum > 0 ? '$' + precioNum.toFixed(2) : ''}</td>
-                <td class="text-center">${tipoEntrega}</td>
+                <td class="text-left precio-columna">${precioNum > 0 ? '$' + precioNum.toFixed(2) : ''}</td>
                 <td class="text-center"></td>
-            </tr>
+                <td class="text-center"></td>
+             </tr>
         `;
     });
 
+    // Renglones vacíos para llegar a 35
     for (let i = pedidos.length + 1; i <= TOTAL_RENGLONES_IMPRESION; i++) {
         const num = i + (paginaActual - 1) * registrosPorPagina;
         tablaHtml += `
             <tr>
                 <td class="text-center">${num}</td>
-                <td class="text-left"></td><td class="text-left"></td><td class="text-left"></td>
-                <td class="text-left"></td><td class="text-left"></td><td class="text-left"></td>
-                <td class="text-center"></td><td class="text-center"></td><td class="text-center"></td>
-                <td class="text-right"></td><td class="text-center"></td><td class="text-center"></td>
-            </tr>
+                <td class="text-left"></td>
+                <td class="text-left"></td>
+                <td class="text-left"></td>
+                <td class="text-left"></td>
+                <td class="text-left"></td>
+                <td class="text-left"></td>
+                <td class="text-center"></td>
+                <td class="text-center"></td>
+                <td class="text-center"></td>
+                <td class="text-left"></td>
+                <td class="text-center"></td>
+                <td class="text-center"></td>
+             </tr>
         `;
     }
 
@@ -146,7 +156,7 @@ export const generarHtmlImpresion = (pedidos: Pedido[], paginaActual: number, re
                     <td class="text-center"><strong>${totales.total10kg > 0 ? totales.total10kg : ''}</strong></td>
                     <td class="text-center"><strong>${totales.total15kg > 0 ? totales.total15kg : ''}</strong></td>
                     <td class="text-center"><strong>${totales.total45kg > 0 ? totales.total45kg : ''}</strong></td>
-                    <td class="text-right"><strong>${totales.totalPrecio > 0 ? '$' + totales.totalPrecio.toFixed(2) : ''}</strong></td>
+                    <td class="text-left"><strong>${totales.totalPrecio > 0 ? '$' + totales.totalPrecio.toFixed(2) : ''}</strong></td>
                     <td colspan="2"></td>
                 </tr>
             </tfoot>

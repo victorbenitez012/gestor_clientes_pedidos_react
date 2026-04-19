@@ -66,7 +66,7 @@ export const EditarTablaPedidos: React.FC = () => {
     useEffect(() => {
         cargarPedidos();
     }, [filtros.search, filtros.searchSecondary, filtros.fechaDesde, filtros.fechaHasta,
-    filtros.repartidorId, filtros.estado, filtros.tipoEntrega, paginaActual]);
+    filtros.repartidorId, filtros.estado, filtros.tipoEntrega, paginaActual, cargarPedidos]);
 
     const handleGuardarCambios = async () => {
         const pedidosModificados = obtenerPedidosModificados();
@@ -110,11 +110,21 @@ export const EditarTablaPedidos: React.FC = () => {
         const ventanaImpresion = window.open('', '_blank');
         if (!ventanaImpresion) return;
 
+        // Calcular totales para impresión
+        let total10kg = 0, total15kg = 0, total45kg = 0, totalPrecio = 0;
+
+        pedidos.forEach(pedido => {
+            total10kg += pedido.garrafa_10kg || 0;
+            total15kg += pedido.garrafa_15kg || 0;
+            total45kg += pedido.garrafa_45kg || 0;
+            totalPrecio += Number(pedido.precio) || 0;
+        });
+
         const totalesImpresion = {
-            total10kg: totales.totalGarrafas10kg,
-            total15kg: totales.totalGarrafas15kg,
-            total45kg: totales.totalGarrafas45kg,
-            totalPrecio: totales.totalPrecio
+            total10kg,
+            total15kg,
+            total45kg,
+            totalPrecio
         };
 
         const html = generarHtmlImpresion(pedidos, paginaActual, REGISTROS_POR_PAGINA, totalesImpresion);
@@ -122,7 +132,6 @@ export const EditarTablaPedidos: React.FC = () => {
         ventanaImpresion.document.close();
         ventanaImpresion.print();
     };
-
     const handleExportar = () => {
         exportarExcel(pedidos, paginaActual, REGISTROS_POR_PAGINA, totales);
         setMensaje('✅ Excel exportado correctamente');
