@@ -51,28 +51,28 @@ export const TablaPedidos: React.FC<TablaPedidosProps> = ({
                     onProgramadoToggle={(checked) => onProgramadoToggle(index, checked)}
                 />
             ))}
-            <tfoot>
-                <tr style={{ backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>
-                    <td colSpan={11} style={{ textAlign: 'right', border: '1px solid #ddd' }}>Total Precio:</td>
-                    <td style={{ textAlign: 'right', border: '1px solid #ddd', fontWeight: 'bold' }}>
-                        ${totales.totalPrecio.toFixed(2)}
-                    </td>
-                    <td colSpan={4} style={{ border: '1px solid #ddd' }}></td>
-                </tr>
-                <tr style={{ backgroundColor: '#e8f4f8' }}>
-                    <td colSpan={2} style={{ textAlign: 'right', border: '1px solid #ddd' }}>Totales Garrafas:</td>
-                    <td style={{ textAlign: 'center', border: '1px solid #ddd' }}>
-                        <strong>{totales.totalGarrafas10kg}</strong> <small>(10kg)</small>
-                    </td>
-                    <td style={{ textAlign: 'center', border: '1px solid #ddd' }}>
-                        <strong>{totales.totalGarrafas15kg}</strong> <small>(15kg)</small>
-                    </td>
-                    <td style={{ textAlign: 'center', border: '1px solid #ddd' }}>
-                        <strong>{totales.totalGarrafas45kg}</strong> <small>(45kg)</small>
-                    </td>
-                    <td colSpan={11} style={{ border: '1px solid #ddd' }}></td>
-                </tr>
-            </tfoot>
+            {/* Fila de Total Precio - alineado debajo de la columna Precio (columna 12) */}
+            <tr style={{ backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>
+                <td colSpan={11} style={{ textAlign: 'right', border: '1px solid #ddd' }}>Total Precio:</td>
+                <td style={{ textAlign: 'right', border: '1px solid #ddd', fontWeight: 'bold' }}>
+                    ${totales.totalPrecio.toFixed(2)}
+                </td>
+                <td colSpan={4} style={{ border: '1px solid #ddd' }}></td>
+            </tr>
+            {/* Fila de Totales Garrafas - alineado debajo de las columnas 10kg, 15kg, 45kg (columnas 3, 4, 5) */}
+            <tr style={{ backgroundColor: '#e8f4f8' }}>
+                <td colSpan={2} style={{ textAlign: 'right', border: '1px solid #ddd', fontWeight: 'bold' }}>Totales Garrafas:</td>
+                <td style={{ textAlign: 'center', border: '1px solid #ddd', fontWeight: 'bold' }}>
+                    {totales.totalGarrafas10kg}
+                </td>
+                <td style={{ textAlign: 'center', border: '1px solid #ddd', fontWeight: 'bold' }}>
+                    {totales.totalGarrafas15kg}
+                </td>
+                <td style={{ textAlign: 'center', border: '1px solid #ddd', fontWeight: 'bold' }}>
+                    {totales.totalGarrafas45kg}
+                </td>
+                <td colSpan={11} style={{ border: '1px solid #ddd' }}></td>
+            </tr>
         </>
     );
 };
