@@ -1,7 +1,14 @@
 ﻿import * as XLSX from 'xlsx';
-import { Pedido, TotalesPedidos } from '../../../../types/types';
+import { Pedido } from '../../../../types/types';
 
-export const exportarExcel = (pedidos: Pedido[], paginaActual: number, registrosPorPagina: number, totales: TotalesPedidos) => {
+interface TotalesImpresion {
+    total10kg: number;
+    total15kg: number;
+    total45kg: number;
+    totalPrecio: number;
+}
+
+export const exportarExcel = (pedidos: Pedido[], paginaActual: number, registrosPorPagina: number, totales: { totalPrecio: number; totalGarrafas10kg: number; totalGarrafas15kg: number; totalGarrafas45kg: number }) => {
     const datosExcel: any[][] = [];
 
     datosExcel.push([
@@ -23,14 +30,13 @@ export const exportarExcel = (pedidos: Pedido[], paginaActual: number, registros
             pedido.garrafa_15kg || 0,
             pedido.garrafa_45kg || 0,
             pedido.precio || 0,
-            pedido.es_programado ? 'P' : 'I',
-            ''
+            '', // E/T vacío para llenar manualmente
+            ''  // ✓ vacío para marcar
         ]);
     });
 
     // Rellenar hasta 35 filas
-    const totalFilas = pedidos.length;
-    for (let i = totalFilas + 1; i <= 35; i++) {
+    for (let i = pedidos.length + 1; i <= 35; i++) {
         datosExcel.push([
             i + (paginaActual - 1) * registrosPorPagina,
             '', '', '', '', '', '', '', '', '', '', '', ''
@@ -39,7 +45,8 @@ export const exportarExcel = (pedidos: Pedido[], paginaActual: number, registros
 
     datosExcel.push([
         'TOTALES:', '', '', '', '', '', '',
-        totales.totalGarrafas10kg, totales.totalGarrafas15kg, totales.totalGarrafas45kg, totales.totalPrecio, '', ''
+        totales.totalGarrafas10kg, totales.totalGarrafas15kg, totales.totalGarrafas45kg,
+        `$${totales.totalPrecio.toFixed(2)}`, '', ''
     ]);
 
     const wb = XLSX.utils.book_new();
@@ -56,7 +63,7 @@ export const exportarExcel = (pedidos: Pedido[], paginaActual: number, registros
     XLSX.writeFile(wb, `pedidos_${fechaStr}.xlsx`);
 };
 
-export const generarHtmlImpresion = (pedidos: Pedido[], paginaActual: number, registrosPorPagina: number, totales: { total10kg: number; total15kg: number; total45kg: number; totalPrecio: number }, TOTAL_RENGLONES_IMPRESION: number = 35): string => {
+export const generarHtmlImpresion = (pedidos: Pedido[], paginaActual: number, registrosPorPagina: number, totales: TotalesImpresion, TOTAL_RENGLONES_IMPRESION: number = 35): string => {
     let tablaHtml = `
     <!DOCTYPE html>
     <html>
@@ -64,19 +71,61 @@ export const generarHtmlImpresion = (pedidos: Pedido[], paginaActual: number, re
         <title>Imprimir Pedidos</title>
         <meta charset="UTF-8">
         <style>
-            * { font-family: Arial, sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
-            body { margin: 20px; padding: 0; }
-            h1 { text-align: center; margin-bottom: 20px; color: #4b0082; font-size: 18px; }
-            table { border-collapse: collapse; width: 100%; margin-bottom: 20px; font-size: 11px; }
-            th, td { border: 1px solid #000; padding: 5px; text-align: left; vertical-align: top; }
-            th { background-color: #f2f2f2; font-weight: bold; text-align: center; }
-            .text-center { text-align: center !important; }
-            .text-left { text-align: left !important; }
-            .totales { font-weight: bold; background-color: #f0f0f0; }
-            .precio-columna {
-                text-align: left !important;
+            * { 
+                font-family: Arial, sans-serif; 
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
             }
-            @media print { body { margin: 0; padding: 10px; } th, td { padding: 4px; } }
+            body { 
+                margin: 20px; 
+                padding: 0; 
+            }
+            h1 { 
+                text-align: center; 
+                margin-bottom: 20px; 
+                color: #4b0082; 
+                font-size: 18px;
+            }
+            table { 
+                border-collapse: collapse; 
+                width: 100%; 
+                margin-bottom: 20px; 
+                font-size: 11px; 
+            }
+            th, td { 
+                border: 1px solid #000; 
+                padding: 5px; 
+                text-align: left; 
+                vertical-align: top; 
+            }
+            th { 
+                background-color: #f2f2f2; 
+                font-weight: bold; 
+                text-align: center; 
+            }
+            .text-center { 
+                text-align: center !important; 
+            }
+            .text-left { 
+                text-align: left !important; 
+            }
+            .text-right { 
+                text-align: right !important; 
+            }
+            .totales { 
+                font-weight: bold; 
+                background-color: #f0f0f0; 
+            }
+            @media print {
+                body { 
+                    margin: 0; 
+                    padding: 10px; 
+                }
+                th, td { 
+                    padding: 4px; 
+                }
+            }
         </style>
     </head>
     <body>
@@ -104,7 +153,6 @@ export const generarHtmlImpresion = (pedidos: Pedido[], paginaActual: number, re
 
     pedidos.forEach((pedido, idx) => {
         const num = idx + 1 + (paginaActual - 1) * registrosPorPagina;
-        
         const precioNum = Number(pedido.precio) || 0;
 
         tablaHtml += `
@@ -119,10 +167,10 @@ export const generarHtmlImpresion = (pedidos: Pedido[], paginaActual: number, re
                 <td class="text-center">${pedido.garrafa_10kg > 0 ? pedido.garrafa_10kg : ''}</td>
                 <td class="text-center">${pedido.garrafa_15kg > 0 ? pedido.garrafa_15kg : ''}</td>
                 <td class="text-center">${pedido.garrafa_45kg > 0 ? pedido.garrafa_45kg : ''}</td>
-                <td class="text-left precio-columna">${precioNum > 0 ? '$' + precioNum.toFixed(2) : ''}</td>
+                <td class="text-left">${precioNum > 0 ? '$' + precioNum.toFixed(2) : ''}</td>
                 <td class="text-center"></td>
                 <td class="text-center"></td>
-             </tr>
+            </tr>
         `;
     });
 
@@ -144,7 +192,7 @@ export const generarHtmlImpresion = (pedidos: Pedido[], paginaActual: number, re
                 <td class="text-left"></td>
                 <td class="text-center"></td>
                 <td class="text-center"></td>
-             </tr>
+            </tr>
         `;
     }
 

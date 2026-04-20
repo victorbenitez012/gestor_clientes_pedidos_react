@@ -24,10 +24,16 @@ export const BotonesAccion: React.FC<BotonesAccionProps> = ({
                 disabled={saving || loading || pedidosModificadosCount === 0}
                 onClick={onGuardar}
             >
-                {saving ? '💾 Guardando...' : `💾 Guardar Cambios (${pedidosModificadosCount})`}
+                {saving ? 'Guardando...' : `Guardar Cambios (${pedidosModificadosCount})`}
             </button>
-            <button type="button" onClick={onImprimir}>🖨️ Imprimir Tabla</button>
-            <button type="button" onClick={onExportar}>📊 Exportar a Excel</button>
+            <button type="button" onClick={onImprimir}>
+                Imprimir Tabla
+            </button>
+            <button type="button" onClick={onExportar}>
+                Exportar a Excel
+            </button>
         </div>
     );
 };
+
+export default BotonesAccion;

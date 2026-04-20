@@ -25,7 +25,9 @@ export const EditarTablaPedidos: React.FC = () => {
     const [modal, setModal] = useState({ isOpen: false, title: '', message: '', type: 'info' as const });
 
     const { filtros, actualizarFiltro, limpiarFiltros } = useFiltros();
-    const { paginaActual, setPaginaActual, cambiarPagina, renderPaginacion } = usePaginacion(1);
+
+    // Estado local para la página actual
+    const [paginaActual, setPaginaActual] = useState(1);
 
     const {
         pedidos,
@@ -42,12 +44,15 @@ export const EditarTablaPedidos: React.FC = () => {
         obtenerPedidosModificados
     } = usePedidos(filtros, paginaActual, REGISTROS_POR_PAGINA);
 
-    // Actualizar totalPaginas en el hook de paginación
+    // Hook de paginación usando el totalPaginas real
+    const { cambiarPagina, renderPaginacion } = usePaginacion(totalPaginas);
+
+    // Sincronizar página actual cuando cambia totalPaginas
     useEffect(() => {
         if (paginaActual > totalPaginas && totalPaginas > 0) {
             setPaginaActual(1);
         }
-    }, [totalPaginas, paginaActual, setPaginaActual]);
+    }, [totalPaginas, paginaActual]);
 
     // Cargar repartidores
     useEffect(() => {
@@ -110,7 +115,6 @@ export const EditarTablaPedidos: React.FC = () => {
         const ventanaImpresion = window.open('', '_blank');
         if (!ventanaImpresion) return;
 
-        // Calcular totales para impresión
         let total10kg = 0, total15kg = 0, total45kg = 0, totalPrecio = 0;
 
         pedidos.forEach(pedido => {
@@ -132,6 +136,7 @@ export const EditarTablaPedidos: React.FC = () => {
         ventanaImpresion.document.close();
         ventanaImpresion.print();
     };
+
     const handleExportar = () => {
         exportarExcel(pedidos, paginaActual, REGISTROS_POR_PAGINA, totales);
         setMensaje('✅ Excel exportado correctamente');
@@ -140,6 +145,12 @@ export const EditarTablaPedidos: React.FC = () => {
 
     const pedidosModificadosCount = obtenerPedidosModificados().length;
     const paginas = renderPaginacion();
+
+    // Función para manejar cambio de página
+    const handleCambiarPagina = (pagina: number) => {
+        cambiarPagina(pagina);
+        setPaginaActual(pagina);
+    };
 
     return (
         <div className="editar-pedidos-container">
@@ -235,7 +246,7 @@ export const EditarTablaPedidos: React.FC = () => {
                 paginaActual={paginaActual}
                 totalPaginas={totalPaginas}
                 paginas={paginas}
-                onCambiarPagina={cambiarPagina}
+                onCambiarPagina={handleCambiarPagina}
             />
 
             <ul className="menu">

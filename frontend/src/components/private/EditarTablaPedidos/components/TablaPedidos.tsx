@@ -52,16 +52,25 @@ export const TablaPedidos: React.FC<TablaPedidosProps> = ({
                 />
             ))}
             <tfoot>
-                <tr>
-                    <td colSpan={11} className="text-right"><strong>💰 Total Precio:</strong></td>
-                    <td colSpan={5}><strong>${totales.totalPrecio.toFixed(2)}</strong></td>
+                <tr style={{ backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>
+                    <td colSpan={11} style={{ textAlign: 'right', border: '1px solid #ddd' }}>Total Precio:</td>
+                    <td style={{ textAlign: 'right', border: '1px solid #ddd', fontWeight: 'bold' }}>
+                        ${totales.totalPrecio.toFixed(2)}
+                    </td>
+                    <td colSpan={4} style={{ border: '1px solid #ddd' }}></td>
                 </tr>
                 <tr style={{ backgroundColor: '#e8f4f8' }}>
-                    <td colSpan={2} className="text-right"><strong>📦 Totales Garrafas:</strong></td>
-                    <td><strong>{totales.totalGarrafas10kg}</strong> <small>(10kg)</small></td>
-                    <td><strong>{totales.totalGarrafas15kg}</strong> <small>(15kg)</small></td>
-                    <td><strong>{totales.totalGarrafas45kg}</strong> <small>(45kg)</small></td>
-                    <td colSpan={11}></td>
+                    <td colSpan={2} style={{ textAlign: 'right', border: '1px solid #ddd' }}>Totales Garrafas:</td>
+                    <td style={{ textAlign: 'center', border: '1px solid #ddd' }}>
+                        <strong>{totales.totalGarrafas10kg}</strong> <small>(10kg)</small>
+                    </td>
+                    <td style={{ textAlign: 'center', border: '1px solid #ddd' }}>
+                        <strong>{totales.totalGarrafas15kg}</strong> <small>(15kg)</small>
+                    </td>
+                    <td style={{ textAlign: 'center', border: '1px solid #ddd' }}>
+                        <strong>{totales.totalGarrafas45kg}</strong> <small>(45kg)</small>
+                    </td>
+                    <td colSpan={11} style={{ border: '1px solid #ddd' }}></td>
                 </tr>
             </tfoot>
         </>

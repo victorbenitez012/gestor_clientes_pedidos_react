@@ -22,44 +22,42 @@ export const FiltrosPedidosComponent: React.FC<FiltrosPedidosComponentProps> = (
         <div className="filters-container">
             <div className="filter-row">
                 <div className="filter-group">
-                    <label>🔍 Búsqueda General</label>
+                    <label>📅 Desde</label>
                     <input
-                        type="text"
-                        placeholder="Buscar en todos los campos"
-                        value={filtros.search}
-                        onChange={(e) => onFiltroChange('search', e.target.value)}
+                        type="date"
+                        value={filtros.fechaDesde}
+                        onChange={(e) => onFiltroChange('fechaDesde', e.target.value)}
                     />
                 </div>
                 <div className="filter-group">
-                    <label>🔎 Búsqueda Secundaria</label>
+                    <label>📅 Hasta</label>
                     <input
-                        type="text"
-                        placeholder="Búsqueda adicional"
-                        value={filtros.searchSecondary}
-                        onChange={(e) => onFiltroChange('searchSecondary', e.target.value)}
+                        type="date"
+                        value={filtros.fechaHasta}
+                        onChange={(e) => onFiltroChange('fechaHasta', e.target.value)}
                     />
                 </div>
             </div>
 
             <div className="filter-row">
                 <div className="filter-group">
-                    <label>👤 Filtrar por Repartidor</label>
+                    <label>👤 Repartidor</label>
                     <select
-                        value={filtros.repartidorId}
+                        value={filtros.repartidorId || ''}
                         onChange={(e) => onFiltroChange('repartidorId', e.target.value)}
                     >
                         <option value="">Todos los repartidores</option>
                         <option value="null">Sin asignar</option>
                         {repartidores.map(r => (
-                            <option key={r.id} value={r.id}>{r.nombre} {r.apellido}</option>
+                            <option key={r.id} value={String(r.id)}>{r.nombre} {r.apellido}</option>
                         ))}
                     </select>
                 </div>
 
                 <div className="filter-group">
-                    <label>📊 Filtrar por Estado</label>
+                    <label>📊 Estado</label>
                     <select
-                        value={filtros.estado}
+                        value={filtros.estado || ''}
                         onChange={(e) => onFiltroChange('estado', e.target.value)}
                     >
                         <option value="">Todos los estados</option>
@@ -75,32 +73,32 @@ export const FiltrosPedidosComponent: React.FC<FiltrosPedidosComponentProps> = (
                 <div className="filter-group">
                     <label>📅 Tipo de Entrega</label>
                     <select
-                        value={filtros.tipoEntrega}
+                        value={filtros.tipoEntrega || ''}
                         onChange={(e) => onFiltroChange('tipoEntrega', e.target.value)}
                     >
                         <option value="">Todos</option>
-                        <option value="programado">📅 Solo Programados</option>
-                        <option value="inmediato">⚡ Solo Inmediatos</option>
+                        <option value="programado">Programados</option>
+                        <option value="inmediato">Inmediatos</option>
                     </select>
                 </div>
-            </div>
 
-            <div className="filter-row">
                 <div className="filter-group">
-                    <label>📅 Desde:</label>
+                    <label>🔍 Búsqueda General</label>
                     <input
-                        type="date"
-                        value={filtros.fechaDesde}
-                        onChange={(e) => onFiltroChange('fechaDesde', e.target.value)}
+                        type="text"
+                        placeholder="Buscar..."
+                        value={filtros.search}
+                        onChange={(e) => onFiltroChange('search', e.target.value)}
                     />
                 </div>
 
                 <div className="filter-group">
-                    <label>📅 Hasta:</label>
+                    <label>🔎 Búsqueda Secundaria</label>
                     <input
-                        type="date"
-                        value={filtros.fechaHasta}
-                        onChange={(e) => onFiltroChange('fechaHasta', e.target.value)}
+                        type="text"
+                        placeholder="Búsqueda adicional..."
+                        value={filtros.searchSecondary}
+                        onChange={(e) => onFiltroChange('searchSecondary', e.target.value)}
                     />
                 </div>
             </div>
@@ -108,9 +106,9 @@ export const FiltrosPedidosComponent: React.FC<FiltrosPedidosComponentProps> = (
             <div className="filter-row">
                 <div className="search-button">
                     <button onClick={onFiltrar} disabled={loading}>
-                        {loading ? '🔄 Cargando...' : '🔍 Filtrar'}
+                        {loading ? 'Cargando...' : 'Filtrar'}
                     </button>
-                    <button onClick={onLimpiar}>🧹 Limpiar Filtros</button>
+                    <button onClick={onLimpiar}>Limpiar Filtros</button>
                 </div>
             </div>
         </div>

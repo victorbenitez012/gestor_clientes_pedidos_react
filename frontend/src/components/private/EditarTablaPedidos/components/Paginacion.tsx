@@ -17,27 +17,45 @@ export const Paginacion: React.FC<PaginacionProps> = ({
 
     return (
         <div className="pagination">
-            <button onClick={() => onCambiarPagina(1)} disabled={paginaActual === 1}>
+            <button
+                onClick={() => onCambiarPagina(1)}
+                disabled={paginaActual === 1}
+                className="pagination-btn"
+            >
                 ⏮️ Primera
             </button>
-            <button onClick={() => onCambiarPagina(paginaActual - 1)} disabled={paginaActual === 1}>
+            <button
+                onClick={() => onCambiarPagina(paginaActual - 1)}
+                disabled={paginaActual === 1}
+                className="pagination-btn"
+            >
                 ◀️ Anterior
             </button>
             {paginas.map(pagina => (
                 <button
                     key={pagina}
                     onClick={() => onCambiarPagina(pagina)}
-                    className={pagina === paginaActual ? 'current' : ''}
+                    className={`pagination-btn ${pagina === paginaActual ? 'current' : ''}`}
                 >
                     {pagina}
                 </button>
             ))}
-            <button onClick={() => onCambiarPagina(paginaActual + 1)} disabled={paginaActual === totalPaginas}>
+            <button
+                onClick={() => onCambiarPagina(paginaActual + 1)}
+                disabled={paginaActual === totalPaginas}
+                className="pagination-btn"
+            >
                 Siguiente ▶️
             </button>
-            <button onClick={() => onCambiarPagina(totalPaginas)} disabled={paginaActual === totalPaginas}>
+            <button
+                onClick={() => onCambiarPagina(totalPaginas)}
+                disabled={paginaActual === totalPaginas}
+                className="pagination-btn"
+            >
                 Última ⏭️
             </button>
         </div>
     );
 };
+
+export default Paginacion;
