@@ -1,6 +1,7 @@
 <?php
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Origin: http://localhost:3000');
+header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
@@ -10,9 +11,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
+// Incluir middleware de autenticación
+require_once __DIR__ . '/../auth/middleware.php';
+
 // Incluir conexión
 include '../conexion.php';
 $conexion = conectarBD();
+
+// Verificar autenticación según el método
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    // Cualquier usuario autenticado puede ver pedidos
+    $user = requireAuth(['admin', 'usuario', 'repartidor']);
+} else {
+    // Solo admin puede modificar pedidos (POST)
+    $user = requireAuth(['admin']);
+}
 
 // ============ GET: Obtener pedidos ============
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {

@@ -1,6 +1,7 @@
 <?php
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Origin: http://localhost:3000');
+header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Methods: POST, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
@@ -9,6 +10,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
+// Incluir middleware de autenticaciÃ³n
+require_once __DIR__ . '/../auth/middleware.php';
+
+// Solo admin puede eliminar repartidores
+$user = requireAuth(['admin']);
+
 include '../conexion.php';
 $conexion = conectarBD();
 
@@ -16,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'DEL
     $input = json_decode(file_get_contents('php://input'), true);
     
     if (!$input || !isset($input['id'])) {
-        echo json_encode(['error' => 'Datos inválidos']);
+        echo json_encode(['error' => 'Datos invï¿½lidos']);
         exit();
     }
     

@@ -2,6 +2,12 @@
 // Incluir conexión a la base de datos
 include '../conexion.php';
 
+// Incluir middleware de autenticación
+require_once __DIR__ . '/../auth/middleware.php';
+
+// Verificar autenticación (cualquier rol puede crear pedidos)
+$user = requireAuth(['admin', 'usuario', 'repartidor']);
+
 // Crear conexión a la base de datos
 $conexion = conectarBD();
 

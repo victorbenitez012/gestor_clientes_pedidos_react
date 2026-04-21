@@ -1,29 +1,43 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
+import { useAuthContext } from '../../context/AuthContext';
 
 interface PrivateRouteProps {
     children: React.ReactNode;
-    roleRequired?: string | string[]; // Opcional: si no se especifica, solo verifica autenticaciÛn
+    roleRequired?: string | string[];
 }
 
 const PrivateRoute = ({ children, roleRequired }: PrivateRouteProps) => {
-    // Obtener el usuario del localStorage
-    const userString = localStorage.getItem('user');
-    const user = userString ? JSON.parse(userString) : null;
+    const { user, isAuthenticated, isLoading } = useAuthContext();
 
-    // Si no hay usuario, redirigir a /login
-    if (!user) {
+    // Mostrar loading mientras se verifica la sesi√≥n
+    if (isLoading) {
+        return (
+            <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '100vh',
+                fontSize: '18px',
+                color: '#666'
+            }}>
+                Verificando sesi√≥n...
+            </div>
+        );
+    }
+
+    // Si no est√° autenticado, redirigir a login
+    if (!isAuthenticated || !user) {
         return <Navigate to="/login" replace />;
     }
 
     // Si se especifica un rol requerido, verificar acceso
     if (roleRequired) {
-        const hasAccess = Array.isArray(roleRequired)
-            ? roleRequired.includes(user.rol) // Si se requiere m˙ltiples roles
-            : user.rol === roleRequired; // Si se requiere un solo rol
+        const requiredRoles = Array.isArray(roleRequired) ? roleRequired : [roleRequired];
+        const hasAccess = requiredRoles.includes(user.rol);
 
-        // Si no tiene acceso, redirigir a /dashboard
         if (!hasAccess) {
+            // Si no tiene acceso, redirigir a /dashboard
             return <Navigate to="/dashboard" replace />;
         }
     }

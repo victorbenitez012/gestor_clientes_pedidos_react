@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './components/public/Login';
+import ForgotPassword from './components/public/ForgotPassword';
+import ResetPassword from './components/public/ResetPassword';
 import Dashboard from './components/private/Dashboard';
 import Clientes from './components/private/Clientes';
 import ClientesAgregar from './components/private/ClientesAgregar';
@@ -11,26 +13,57 @@ import { EditarTablaPedidos } from './components/private/EditarTablaPedidos';
 import Repartidores from './components/private/Repartidores';
 import RepartidoresBuscar from './components/private/RepartidoresBuscar';
 import RepartidoresAgregar from './components/private/RepartidoresAgregar';
+import UsuariosAdmin from './components/private/Usuarios/UsuariosAdmin';
 import PrivateRoute from './components/private/PrivateRoute';
 
 const App = () => {
     return (
         <Router basename="/gestor_clientes_pedidos_react">
             <Routes>
-                {/* Ruta pública */}
+                {/* ============ RUTAS PÚBLICAS ============ */}
                 <Route path="/login" element={<Login />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
 
-                {/* Ruta protegida: Dashboard (accesible para admin y user) */}
+                {/* ============ RUTAS PROTEGIDAS - ADMIN Y USUARIO ============ */}
                 <Route
                     path="/dashboard"
                     element={
-                        <PrivateRoute roleRequired={['admin', 'usuario']}>
+                        <PrivateRoute roleRequired={['admin', 'usuario', 'repartidor']}>
                             <Dashboard />
                         </PrivateRoute>
                     }
                 />
 
-                {/* Ruta protegida: Clientes (solo accesible para admin) */}
+                <Route
+                    path="/pedidos"
+                    element={
+                        <PrivateRoute roleRequired={['admin', 'usuario', 'repartidor']}>
+                            <Pedidos />
+                        </PrivateRoute>
+                    }
+                />
+
+                <Route
+                    path="/pedidos/editar_tabla"
+                    element={
+                        <PrivateRoute roleRequired={['admin', 'usuario', 'repartidor']}>
+                            <EditarTablaPedidos />
+                        </PrivateRoute>
+                    }
+                />
+
+                <Route
+                    path="/pedidos/agregar"
+                    element={
+                        <PrivateRoute roleRequired={['admin', 'usuario', 'repartidor']}>
+                            <AgregarPedido />
+                        </PrivateRoute>
+                    }
+                />
+
+                {/* ============ RUTAS PROTEGIDAS - SOLO ADMIN ============ */}
+
                 <Route
                     path="/clientes"
                     element={
@@ -40,7 +73,6 @@ const App = () => {
                     }
                 />
 
-                {/* Ruta protegida: ClientesAgregar (solo accesible para admin) */}
                 <Route
                     path="/ClientesAgregar"
                     element={
@@ -50,7 +82,6 @@ const App = () => {
                     }
                 />
 
-                {/* Ruta protegida: ClientesBuscar (solo accesible para admin) */}
                 <Route
                     path="/ClientesBuscar"
                     element={
@@ -60,17 +91,6 @@ const App = () => {
                     }
                 />
 
-                {/* Ruta protegida: Pedidos (accesible para admin y user) */}
-                <Route
-                    path="/pedidos"
-                    element={
-                        <PrivateRoute roleRequired={['admin', 'usuario']}>
-                            <Pedidos />
-                        </PrivateRoute>
-                    }
-                />
-
-                {/* Ruta protegida: Repartidores (solo accesible para admin) */}
                 <Route
                     path="/repartidores"
                     element={
@@ -80,7 +100,6 @@ const App = () => {
                     }
                 />
 
-                {/* Ruta protegida: RepartidoresBuscar (solo accesible para admin) */}
                 <Route
                     path="/repartidoresbuscar"
                     element={
@@ -90,7 +109,6 @@ const App = () => {
                     }
                 />
 
-                {/* Ruta protegida: RepartidoresAgregar (solo accesible para admin) */}
                 <Route
                     path="/repartidoresagregar"
                     element={
@@ -100,27 +118,17 @@ const App = () => {
                     }
                 />
 
-                {/* Ruta protegida: EditarTablaPedidos (accesible para admin y user) */}
                 <Route
-                    path="/pedidos/editar_tabla"
+                    path="/admin/usuarios"
                     element={
-                        <PrivateRoute roleRequired={['admin', 'usuario']}>
-                            <EditarTablaPedidos />
+                        <PrivateRoute roleRequired="admin">
+                            <UsuariosAdmin />
                         </PrivateRoute>
                     }
                 />
 
-                {/* Ruta protegida: agregar-pedido (accesible para admin y user) */}
-                <Route
-                    path="/pedidos/agregar"
-                    element={
-                        <PrivateRoute roleRequired={['admin', 'usuario']}>
-                            <AgregarPedido />
-                        </PrivateRoute>
-                    }
-                />
-
-                {/* Ruta por defecto: Redirigir a /login si no coincide ninguna ruta */}
+                {/* ============ RUTA POR DEFECTO ============ */}
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
         </Router>

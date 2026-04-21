@@ -1,6 +1,7 @@
 <?php
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Origin: http://localhost:3000');
+header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
@@ -9,11 +10,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
+// Incluir middleware de autenticaciÃ³n
+require_once __DIR__ . '/../auth/middleware.php';
+
+// Cualquier usuario autenticado puede ver repartidores
+$user = requireAuth(['admin', 'usuario', 'repartidor']);
+
 require_once __DIR__ . '/../conexion.php';
 $conexion = conectarBD();
 
 if (!$conexion) {
-    echo json_encode(['error' => 'Error de conexión a la base de datos']);
+    echo json_encode(['error' => 'Error de conexiï¿½n a la base de datos']);
     exit();
 }
 

@@ -1,7 +1,23 @@
 <?php
 // Archivo: conexion.php
 
-require_once __DIR__ . './config.php';
+require_once __DIR__ . '/config.php';
+
+/**
+ * Cargar configuraci�n de la base de datos
+ *
+ * @return array Configuraci�n de la base de datos
+ */
+function gestor_cargar_bd_config() {
+    $config = include __DIR__ . '/config.php';
+    return [
+        'host' => $config['db']['host'],
+        'port' => 3306,
+        'name' => $config['db']['base_datos'],
+        'user' => $config['db']['usuario'],
+        'password' => $config['db']['contrasena'],
+    ];
+}
 
 /**
  * Funci�n para conectar a la base de datos.
@@ -10,7 +26,7 @@ require_once __DIR__ . './config.php';
  * @throws Exception Si la conexi�n falla.
  */
 function conectarBD() {
-    $config = include __DIR__ . './config.php';
+    $config = include __DIR__ . '/config.php';
     $host = $config['db']['host'];
     $usuario = $config['db']['usuario'];
     $contrasena = $config['db']['contrasena'];

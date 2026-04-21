@@ -1,6 +1,7 @@
 <?php
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Origin: http://localhost:3000');
+header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
@@ -9,10 +10,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
+// Incluir middleware de autenticaciÃ³n
+require_once __DIR__ . '/../auth/middleware.php';
+
+// Cualquier usuario autenticado puede buscar clientes
+$user = requireAuth(['admin', 'usuario', 'repartidor']);
+
 include '../conexion.php';
 $conexion = conectarBD();
 
-// Obtener parámetros
+// Obtener parï¿½metros
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
 $pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
 $registros_por_pagina = isset($_GET['registros_por_pagina']) ? (int)$_GET['registros_por_pagina'] : 50;

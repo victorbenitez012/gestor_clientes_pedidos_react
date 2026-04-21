@@ -10,6 +10,7 @@ import TablaUltimosPedidos from './TablaUltimosPedidos';
 import { useFormateoTexto } from './hooks/useFormateoTexto';
 import { useBuscarCliente } from './hooks/useBuscarCliente';
 import { Cliente, Repartidor, FormDataPedido, Pedido } from './types';
+import { buscarRepartidores } from '../../../services/api';
 
 const AgregarPedido: React.FC = () => {
     // Hooks personalizados
@@ -74,17 +75,17 @@ const AgregarPedido: React.FC = () => {
     useEffect(() => {
         const fetchRepartidores = async () => {
             try {
-                const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/repartidores/index.php');
-                const data = await response.json();
+                const data = await buscarRepartidores();
                 setRepartidores(Array.isArray(data) ? data : []);
             } catch (error) {
                 console.error('Error cargando repartidores:', error);
+                setRepartidores([]);
             }
         };
         fetchRepartidores();
     }, []);
 
-    // Obtener últimos pedidos del cliente
+    // Obtener ï¿½ltimos pedidos del cliente
     const obtenerUltimosPedidos = async (clienteId: number) => {
         try {
             const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/pedidos/agregar.php?obtener_pedidos=1&cliente_id=${clienteId}`);
@@ -201,7 +202,7 @@ const AgregarPedido: React.FC = () => {
         if (inputDireccionRef.current) inputDireccionRef.current.value = '';
     };
 
-    // Función para enviar el formulario usando FormData
+    // Funciï¿½n para enviar el formulario usando FormData
     const realizarSubmit = async (datosFormulario: FormDataPedido, idCliente: number | null, actualizarCliente: boolean) => {
         setLoading(true);
 
@@ -248,7 +249,7 @@ const AgregarPedido: React.FC = () => {
                 if (text.includes('success')) {
                     return { success: true, whatsappUrl: null };
                 }
-                throw new Error('Respuesta inválida del servidor');
+                throw new Error('Respuesta invï¿½lida del servidor');
             }
 
             if (data.error) {
@@ -286,7 +287,7 @@ const AgregarPedido: React.FC = () => {
             setModal({
                 isOpen: true,
                 title: 'Enviar WhatsApp',
-                message: '¿Quieres enviar los detalles del pedido al repartidor por WhatsApp?',
+                message: 'ï¿½Quieres enviar los detalles del pedido al repartidor por WhatsApp?',
                 type: 'info',
                 onConfirm: () => {
                     window.open(urlWhatsapp, '_blank');
@@ -359,12 +360,12 @@ const AgregarPedido: React.FC = () => {
             return;
         }
 
-        // Si el cliente existe y fue modificado, preguntar qué hacer
+        // Si el cliente existe y fue modificado, preguntar quï¿½ hacer
         if (clienteId && clienteModificado()) {
             setModal({
                 isOpen: true,
                 title: 'Cliente modificado',
-                message: 'Los datos del cliente han sido modificados.\n\n¿Qué deseas hacer?\n\n• ACTUALIZAR: Modificar el cliente existente\n• NUEVO CLIENTE: Crear un cliente nuevo con estos datos\n• CANCELAR: Volver atrás sin guardar',
+                message: 'Los datos del cliente han sido modificados.\n\nï¿½Quï¿½ deseas hacer?\n\nï¿½ ACTUALIZAR: Modificar el cliente existente\nï¿½ NUEVO CLIENTE: Crear un cliente nuevo con estos datos\nï¿½ CANCELAR: Volver atrï¿½s sin guardar',
                 type: 'warning',
                 onConfirm: async () => {
                     closeModal();
@@ -400,7 +401,7 @@ const AgregarPedido: React.FC = () => {
             mostrarModalWhatsApp(result.whatsappUrl);
             limpiarFormulario();
 
-            // Recargar últimos pedidos si es necesario
+            // Recargar ï¿½ltimos pedidos si es necesario
             if (clienteId || formData.direccion_cliente) {
                 const buscarClienteResp = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/pedidos/agregar.php?buscar_cliente=1&direccion_busqueda=${encodeURIComponent(formData.direccion_cliente)}`);
                 const clientesEncontrados = await buscarClienteResp.json();
