@@ -10,7 +10,12 @@ import TablaUltimosPedidos from './TablaUltimosPedidos';
 import { useFormateoTexto } from './hooks/useFormateoTexto';
 import { useBuscarCliente } from './hooks/useBuscarCliente';
 import { Cliente, Repartidor, FormDataPedido, Pedido } from './types';
-import { buscarRepartidores } from '../../../services/api';
+import { 
+    buscarRepartidores, 
+    buscarClientesPorDireccionAgregar,
+    obtenerUltimosPedidosClienteAgregar,
+    agregarPedidoCompleto
+} from '../../../services/api';
 
 const AgregarPedido: React.FC = () => {
     // Hooks personalizados
@@ -24,7 +29,8 @@ const AgregarPedido: React.FC = () => {
         buscarClientesDireccion,
         limpiarSugerencias,
         setMostrarSugerenciasTotal,
-        setMostrarSugerenciasDireccion
+        setMostrarSugerenciasDireccion,
+        loading: loadingBusqueda
     } = useBuscarCliente();
 
     // Estado local
@@ -34,7 +40,7 @@ const AgregarPedido: React.FC = () => {
     const [clienteOriginal, setClienteOriginal] = useState<Cliente | null>(null);
     const [loading, setLoading] = useState(false);
 
-    // Estado del modal con todas las propiedades requeridas
+    // Estado del modal
     const [modal, setModal] = useState({
         isOpen: false,
         title: '',
@@ -71,7 +77,7 @@ const AgregarPedido: React.FC = () => {
         es_programado: false
     });
 
-    // Cargar repartidores
+    // Cargar repartidores usando la API
     useEffect(() => {
         const fetchRepartidores = async () => {
             try {
@@ -85,16 +91,11 @@ const AgregarPedido: React.FC = () => {
         fetchRepartidores();
     }, []);
 
-    // Obtener �ltimos pedidos del cliente
+    // Obtener últimos pedidos del cliente usando la API
     const obtenerUltimosPedidos = async (clienteId: number) => {
         try {
-            const response = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/pedidos/agregar.php?obtener_pedidos=1&cliente_id=${clienteId}`);
-            const data = await response.json();
-            if (!data.error && Array.isArray(data)) {
-                setUltimosPedidos(data);
-            } else {
-                setUltimosPedidos([]);
-            }
+            const data = await obtenerUltimosPedidosClienteAgregar(clienteId);
+            setUltimosPedidos(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Error obteniendo pedidos:', error);
             setUltimosPedidos([]);
@@ -202,7 +203,7 @@ const AgregarPedido: React.FC = () => {
         if (inputDireccionRef.current) inputDireccionRef.current.value = '';
     };
 
-    // Funci�n para enviar el formulario usando FormData
+    // Función para enviar el formulario usando la API
     const realizarSubmit = async (datosFormulario: FormDataPedido, idCliente: number | null, actualizarCliente: boolean) => {
         setLoading(true);
 
@@ -227,35 +228,15 @@ const AgregarPedido: React.FC = () => {
             formDataToSend.append('garrafa_10kg', datosFormulario.garrafa_10kg.toString());
             formDataToSend.append('garrafa_15kg', datosFormulario.garrafa_15kg.toString());
             formDataToSend.append('garrafa_45kg', datosFormulario.garrafa_45kg.toString());
-
-            // Campos de fecha programada - CORREGIDO
             formDataToSend.append('es_programado', datosFormulario.es_programado ? '1' : '0');
 
             if (datosFormulario.es_programado && datosFormulario.fecha_entrega_programada) {
                 formDataToSend.append('fecha_entrega_programada', datosFormulario.fecha_entrega_programada);
             }
 
-            const response = await fetch('http://localhost/gestor_clientes_pedidos_react/backend/pedidos/agregar.php', {
-                method: 'POST',
-                body: formDataToSend
-            });
-
-            const text = await response.text();
-
-            let data;
-            try {
-                data = JSON.parse(text);
-            } catch (e) {
-                if (text.includes('success')) {
-                    return { success: true, whatsappUrl: null };
-                }
-                throw new Error('Respuesta inv�lida del servidor');
-            }
-
-            if (data.error) {
-                throw new Error(data.error);
-            }
-
+            // Usar la función de API
+            const data = await agregarPedidoCompleto(formDataToSend);
+            
             return {
                 success: true,
                 whatsappUrl: data.whatsapp_url || null
@@ -287,7 +268,7 @@ const AgregarPedido: React.FC = () => {
             setModal({
                 isOpen: true,
                 title: 'Enviar WhatsApp',
-                message: '�Quieres enviar los detalles del pedido al repartidor por WhatsApp?',
+                message: '¿Quieres enviar los detalles del pedido al repartidor por WhatsApp?',
                 type: 'info',
                 onConfirm: () => {
                     window.open(urlWhatsapp, '_blank');
@@ -360,12 +341,12 @@ const AgregarPedido: React.FC = () => {
             return;
         }
 
-        // Si el cliente existe y fue modificado, preguntar qu� hacer
+        // Si el cliente existe y fue modificado, preguntar qué hacer
         if (clienteId && clienteModificado()) {
             setModal({
                 isOpen: true,
                 title: 'Cliente modificado',
-                message: 'Los datos del cliente han sido modificados.\n\n�Qu� deseas hacer?\n\n� ACTUALIZAR: Modificar el cliente existente\n� NUEVO CLIENTE: Crear un cliente nuevo con estos datos\n� CANCELAR: Volver atr�s sin guardar',
+                message: 'Los datos del cliente han sido modificados.\n\n¿Qué deseas hacer?\n\n• ACTUALIZAR: Modificar el cliente existente\n• NUEVO CLIENTE: Crear un cliente nuevo con estos datos\n• CANCELAR: Volver atrás sin guardar',
                 type: 'warning',
                 onConfirm: async () => {
                     closeModal();
@@ -401,15 +382,18 @@ const AgregarPedido: React.FC = () => {
             mostrarModalWhatsApp(result.whatsappUrl);
             limpiarFormulario();
 
-            // Recargar �ltimos pedidos si es necesario
+            // Recargar últimos pedidos usando la API
             if (clienteId || formData.direccion_cliente) {
-                const buscarClienteResp = await fetch(`http://localhost/gestor_clientes_pedidos_react/backend/pedidos/agregar.php?buscar_cliente=1&direccion_busqueda=${encodeURIComponent(formData.direccion_cliente)}`);
-                const clientesEncontrados = await buscarClienteResp.json();
-                if (clientesEncontrados && clientesEncontrados.length > 0) {
-                    const nuevoClienteId = clientesEncontrados[0].id;
-                    setClienteId(nuevoClienteId);
-                    setClienteOriginal(clientesEncontrados[0]);
-                    obtenerUltimosPedidos(nuevoClienteId);
+                try {
+                    const clientesEncontrados = await buscarClientesPorDireccionAgregar(formData.direccion_cliente);
+                    if (clientesEncontrados && clientesEncontrados.length > 0) {
+                        const nuevoClienteId = clientesEncontrados[0].id;
+                        setClienteId(nuevoClienteId);
+                        setClienteOriginal(clientesEncontrados[0]);
+                        obtenerUltimosPedidos(nuevoClienteId);
+                    }
+                } catch (error) {
+                    console.error('Error recargando pedidos:', error);
                 }
             }
         } else if (result.success) {
@@ -451,6 +435,7 @@ const AgregarPedido: React.FC = () => {
                     mostrarSugerencias={mostrarSugerenciasTotal}
                     setMostrarSugerencias={setMostrarSugerenciasTotal}
                     inputRef={inputTotalRef}
+                    loading={loadingBusqueda}
                 />
 
                 <div className="three-columns">

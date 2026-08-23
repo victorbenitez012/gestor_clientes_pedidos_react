@@ -1,15 +1,16 @@
-// ============================================
-// Hook de Autenticación (JWT)
-// ============================================
-
+// src/hooks/useAuth.tsx
 import { useState, useEffect, useCallback } from 'react';
 import {
+    getToken,
+    getCurrentUser,
+    removeToken,
     login as loginService,
     logout as logoutService,
     verifyToken,
-    getCurrentUser,
     User,
-    LoginResponse
+    LoginResponse,
+    hasRole as hasRoleService,
+    isAdmin as isAdminService
 } from '../services/authService';
 
 interface UseAuthReturn {
@@ -24,12 +25,13 @@ interface UseAuthReturn {
     clearError: () => void;
 }
 
-export const useAuth = (): UseAuthReturn => {
+// Asegurarnos de que la función esté exportada correctamente
+export function useAuth(): UseAuthReturn {
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Verificar token al montar
+    // Verificar autenticación al montar
     useEffect(() => {
         const initAuth = async () => {
             setIsLoading(true);
@@ -48,6 +50,7 @@ export const useAuth = (): UseAuthReturn => {
                 } else {
                     // Token inválido, limpiar estado
                     setUser(null);
+                    removeToken();
                 }
             } catch (err) {
                 console.error('Error verificando autenticación:', err);
@@ -80,7 +83,10 @@ export const useAuth = (): UseAuthReturn => {
         } catch (err: any) {
             const message = err.message || 'Error al iniciar sesión';
             setError(message);
-            throw err;
+            return {
+                success: false,
+                message
+            };
         } finally {
             setIsLoading(false);
         }
@@ -99,27 +105,27 @@ export const useAuth = (): UseAuthReturn => {
             setUser(null);
             setError(null);
             setIsLoading(false);
+            // Redirigir al login
+            window.location.href = '/login';
         }
     }, []);
 
     /**
-     * Verificar rol
+     * Verificar si tiene un rol específico
      */
     const hasRole = useCallback((roles: string | string[]): boolean => {
-        if (!user) return false;
-        const rolesArray = Array.isArray(roles) ? roles : [roles];
-        return rolesArray.includes(user.rol);
+        return hasRoleService(user, roles);
     }, [user]);
 
     /**
-     * Verificar si es admin
+     * Verificar si es administrador
      */
     const isAdmin = useCallback((): boolean => {
-        return user?.rol === 'admin';
+        return isAdminService(user);
     }, [user]);
 
     /**
-     * Limpiar error
+     * Limpiar errores
      */
     const clearError = useCallback(() => {
         setError(null);
@@ -136,4 +142,7 @@ export const useAuth = (): UseAuthReturn => {
         isAdmin,
         clearError,
     };
-};
+}
+
+// Exportación por defecto
+export default useAuth;

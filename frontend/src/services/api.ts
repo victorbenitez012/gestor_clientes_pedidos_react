@@ -1,5 +1,8 @@
-import { API_BASE_URL } from '../config/config';
+// frontend/src/services/api.ts
 import { getToken, removeToken } from './authService';
+
+// Obtener la URL base desde las variables de entorno o usar la predeterminada
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost/gestor_clientes_pedidos_react/backend';
 
 // ============================================
 // Helper para manejar respuestas
@@ -35,6 +38,20 @@ const getDefaultOptions = (): RequestInit => {
         credentials: 'include',
         headers: {
             'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+    };
+};
+
+// ============================================
+// Opciones para FormData (sin Content-Type)
+// ============================================
+const getFormDataOptions = (): RequestInit => {
+    const token = getToken();
+    return {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
             ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
     };
@@ -130,11 +147,11 @@ export const guardarCambios = async (pedidos: any[]) => {
     return handleResponse(response);
 };
 
-export const agregarPedidoCompleto = async (pedidoData: any) => {
+// CORREGIDO: Agregar pedido con FormData y autenticación
+export const agregarPedidoCompleto = async (pedidoData: FormData) => {
     const response = await fetch(`${API_BASE_URL}/pedidos/agregar.php`, {
-        method: 'POST',
-        credentials: 'include',
-        body: pedidoData, // FormData no necesita Content-Type: application/json
+        ...getFormDataOptions(),
+        body: pedidoData,
     });
     return handleResponse(response);
 };

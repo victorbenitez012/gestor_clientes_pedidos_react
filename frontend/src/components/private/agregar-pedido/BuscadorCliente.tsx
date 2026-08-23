@@ -10,6 +10,7 @@ interface BuscadorClienteProps {
     mostrarSugerencias: boolean;
     setMostrarSugerencias: (mostrar: boolean) => void;
     inputRef?: React.RefObject<HTMLInputElement | null>;
+    loading?: boolean;
 }
 
 const BuscadorCliente: React.FC<BuscadorClienteProps> = ({
@@ -18,7 +19,8 @@ const BuscadorCliente: React.FC<BuscadorClienteProps> = ({
     sugerencias,
     mostrarSugerencias,
     setMostrarSugerencias,
-    inputRef
+    inputRef,
+    loading = false
 }) => {
     const { capitalizarPalabras } = useFormateoTexto();
     const sugerenciasRef = useRef<HTMLDivElement>(null);
@@ -44,14 +46,21 @@ const BuscadorCliente: React.FC<BuscadorClienteProps> = ({
     return (
         <div className="campo-busqueda-cliente">
             <label>🔍 Buscar Cliente Existente (nombre, dirección, barrio o teléfono):</label>
-            <input
-                type="text"
-                ref={inputElement}
-                className="input-busqueda"
-                placeholder="Escribe para buscar un cliente existente..."
-                autoComplete="off"
-                onChange={handleInputChange}
-            />
+            <div style={{ position: 'relative' }}>
+                <input
+                    type="text"
+                    ref={inputElement}
+                    className="input-busqueda"
+                    placeholder="Escribe para buscar un cliente existente..."
+                    autoComplete="off"
+                    onChange={handleInputChange}
+                />
+                {loading && (
+                    <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)' }}>
+                        ⏳
+                    </span>
+                )}
+            </div>
             {mostrarSugerencias && sugerencias.length > 0 && (
                 <div ref={sugerenciasRef} className="sugerencias">
                     {sugerencias.map(cliente => (
